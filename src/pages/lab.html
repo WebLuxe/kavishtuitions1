@@ -1,0 +1,49 @@
+<section class="phead phead--tight wrap" data-hero data-scene="lab">
+  <span class="eyebrow" data-in id="labStreak">Maths Lab</span>
+  <h1 class="d1" data-rise-now>Maths you can <em>touch.</em></h1>
+</section>
+
+<section class="wrap" aria-label="Maths Lab tools" style="padding-bottom:64px">
+  <div class="seg labtabs" role="group" aria-label="Choose a tool" id="labTabs" data-in>
+    <button type="button" data-t="swipe" aria-pressed="true">Swipe Maths</button>
+    <button type="button" data-t="parabola" aria-pressed="false">Parabola</button>
+    <button type="button" data-t="quick" aria-pressed="false">Quick fire</button>
+  </div>
+
+  <div data-tab="swipe">
+    <div class="game" id="game"></div>
+  </div>
+
+  <div data-tab="parabola" hidden>
+    <div class="pb">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <p class="pb__eq" id="eq" aria-live="polite"></p>
+        <div class="lvlpick" role="group" aria-label="Mode"><button type="button" id="mMaths" aria-pressed="true">Maths</button><button type="button" id="mAdd" aria-pressed="false">Add Maths</button></div>
+      </div>
+      <canvas id="graph" role="img" aria-label="Graph of the quadratic. Drag the points, or use the sliders below."></canvas>
+      <p class="tipline" id="why" aria-live="polite"></p>
+      <div class="sliders">
+        <label>a = <output id="oa"></output><input id="ia" type="range" min="-4" max="4" step=".25" value="1"></label>
+        <label>b = <output id="ob"></output><input id="ib" type="range" min="-6" max="6" step=".5" value="-2"></label>
+        <label>c = <output id="oc"></output><input id="ic" type="range" min="-8" max="8" step=".5" value="-3"></label>
+      </div>
+      <dl class="read panel" style="padding:16px">
+        <div><dt>Discriminant</dt><dd id="rD"></dd></div>
+        <div><dt>Roots</dt><dd id="rR"></dd></div>
+        <div><dt>Vertex</dt><dd id="rV"></dd></div>
+        <div><dt>Nature</dt><dd id="rN"></dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <div data-tab="quick" hidden>
+    <form class="panel qz" id="quiz" novalidate>
+      <div class="game__top"><span>Quick fire</span><span>Streak <b id="qS">0</b>, best <b id="qB">0</b></span></div>
+      <p class="q" id="qq"></p>
+      <label for="qin" id="qh" class="mute"></label>
+      <div class="ans"><input class="inp" id="qin" type="text" inputmode="decimal" autocomplete="off" placeholder="Your answer"><button class="btn btn--sun">Check</button></div>
+      <p id="mark" role="status" class="mute" style="min-height:1.6em"></p>
+      <button type="button" class="btn btn--line btn--sm" id="skip">Skip this one</button>
+    </form>
+  </div>
+</section>
