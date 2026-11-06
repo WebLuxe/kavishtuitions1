@@ -256,7 +256,10 @@ const pages = [
   /* the cache engine gets a new name whenever anything changes */
   const core = ['css/site.css', 'js/site.min.js', 'js/content.js', 'fonts/mona.woff2', 'fonts/serif-i.woff2', 'favicon.svg', 'index.html'];
   const hash = require('crypto').createHash('sha1');
-  [...core, ...pages.map(p => p.file)].forEach(f => hash.update(fs.readFileSync(path.join(ROOT, f))));
+  [...core, ...pages.map(p => p.file)].forEach(f => {
+    const b = fs.readFileSync(path.join(ROOT, f));
+    hash.update(/woff2$/.test(f) ? b : b.toString().replace(/\r\n/g, '\n'));
+  });
   const ver = hash.digest('hex').slice(0, 10);
   fs.writeFileSync(path.join(ROOT, 'sw.js'), (await min(read('sw.js').replace('@@VERSION@@', ver).replace('@@CORE@@', JSON.stringify(core)))));
   const gz = f => require('zlib').gzipSync(fs.readFileSync(path.join(ROOT, f)), { level: 9 }).length;
