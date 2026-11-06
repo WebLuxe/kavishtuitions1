@@ -1,0 +1,31 @@
+<section class="s" id="contact" data-fig="unit" data-sky="0"><div class="s__in">
+  <div class="vis" aria-hidden="true"></div>
+  <div class="txt">
+    <span class="eyebrow" data-a>Contact</span>
+    <h1 class="d1" data-w>Let's <em>talk.</em></h1>
+    <div class="rows" id="contactList" data-a>
+      <a class="cl" href="{{wa}}" target="_blank" rel="noopener"><span class="i">{{i:wa}}</span><span><small>WhatsApp</small><b>+230 5923 8436</b></span>{{i:arrow}}</a>
+      <a class="cl" href="tel:+23059238436"><span class="i">{{i:phone}}</span><span><small>Call</small><b>+230 5923 8436</b></span>{{i:arrow}}</a>
+      <div class="cl" style="grid-template-columns:2.6em 1fr"><span class="i">{{i:pin}}</span><span><small>Where</small><b>Moka, Mauritius</b></span></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="s s--center" id="message" data-fig="none" data-dim="0" aria-label="Send a message"><div class="s__in">
+  <div class="txt" style="text-align:left;align-items:stretch;width:100%;max-width:34em">
+    <h2 class="d2" data-w>Tell me about <em>the student.</em></h2>
+    <form id="contactForm" novalidate data-a>
+      <div class="formrow">
+        <label class="field">Your name<input type="text" id="cName" name="name" autocomplete="name" enterkeyhint="next" required></label>
+        <label class="field">Phone<input type="tel" id="cPhone" name="tel" autocomplete="tel" inputmode="tel" enterkeyhint="next" required></label>
+      </div>
+      <div class="formrow">
+        <label class="field">Subject<select id="cSub" name="subject"><option>Mathematics</option><option>Additional Mathematics</option><option>Both</option></select></label>
+        <label class="field">Grade<select id="cGrade" name="grade"><option>Grade 9 (NCE)</option><option>Grade 10 (SC / IGCSE)</option><option>Grade 11 (SC / IGCSE)</option><option>Grade 12 (HSC / A-Level)</option><option>Grade 13 (HSC / A-Level)</option></select></label>
+      </div>
+      <label class="field opt">Anything I should know?<textarea id="cMsg" name="message" rows="2" enterkeyhint="send"></textarea></label>
+      <button class="btn btn--wa btn--wide" style="margin-top:.8em">{{i:wa}}Send on WhatsApp</button>
+      <p class="err" id="cErr" role="alert"></p>
+    </form>
+  </div>
+</div></section>

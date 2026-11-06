@@ -1,5 +1,5 @@
-// Builds the static pages. Run: node src/build.js
-// The shared chrome lives here and each page body lives in src/pages/.
+// Builds the site. Run: npm install, then npm run build
+// Sections live in src/sections/, styles in src/css/, scripts in src/js/.
 // Day-to-day edits (details, credentials, lessons) only need js/content.js.
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -40,17 +40,41 @@ const ICONS = {
   back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   card: '<rect x="3.500" y="5.500" width="17" height="13" rx="2"/><path d="M3.500 10h17"/>'
 };
-const sprite = '<svg width="0" height="0" style="position:absolute" aria-hidden="true">' +
+const GRAD = '<defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8b6cff"/><stop offset=".55" stop-color="#22d3ee"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs>';
+const sprite = '<svg width="0" height="0" style="position:absolute" aria-hidden="true">' + GRAD +
   Object.entries(ICONS).map(([k, v]) => `<symbol id="i-${k}" viewBox="0 0 24 24">${v}</symbol>`).join('') + '</svg>';
 const ic = (n, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8b6cff"/><stop offset=".55" stop-color="#22d3ee"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#lg)"/><path d="M7 9.500q9 26 18 0" fill="none" stroke="#0b0720" stroke-width="3.200" stroke-linecap="round"/></svg>';
+const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="url(#lg)"/><path d="M7 9.500q9 26 18 0" fill="none" stroke="#0b0720" stroke-width="3.200" stroke-linecap="round"/></svg>';
 
 const NAV = [['index.html', 'Home', 'home'], ['tuition.html', 'Tuition', 'cap'], ['courses.html', 'Courses', 'book'], ['lab.html', 'Maths Lab', 'lab'], ['pricing.html', 'Pricing', 'tag'], ['contact.html', 'Contact', 'chat']];
 
+
+/* All the colours of the site. Change them here and the 3D follows. */
+const T = (o) => Object.entries(o).map(([k, v]) => `--${k}:${v}`).join(';');
+const TOKENS = {
+  night: '#0b0720', 'night-2': '#120b30', panel: '#17103a', 'panel-2': '#1e1548', card: 'rgb(30 21 72/.72)', well: 'rgb(11 7 32/.72)', glass: 'rgb(18 11 48/.82)', dockbg: 'rgb(20 13 52/.95)',
+  line: 'rgb(226 220 255/.14)', 'line-2': 'rgb(226 220 255/.26)', ink: '#f5f2ff', mute: '#b8b2da', sun: '#ffcf7a', 'on-sun': '#1b1038', tint: 'rgb(255 207 122/.12)',
+  violet: '#a48dff', cyan: '#67e8f9', pink: '#f9a8d4', good: '#5eead4', 'good-line': 'rgb(94 234 212/.4)', 'good-bg': 'rgb(12 34 44/.92)', bad: '#fb7185',
+  ring: 'conic-gradient(from 210deg,#a48dff,#67e8f9,#f9a8d4,#ffcf7a,#a48dff)',
+  sky1: 'radial-gradient(ellipse 90% 70% at 62% 30%,#3a1a8a 0%,#1d0f52 40%,transparent 76%)', sky2: 'radial-gradient(ellipse 80% 70% at 30% 62%,#1e3a8a 0%,#10174f 42%,transparent 76%)', sky3: 'radial-gradient(ellipse 80% 70% at 70% 66%,#6d1a7a 0%,#330f4f 42%,transparent 76%)',
+  cardx: 'radial-gradient(120% 90% at 50% 0%,#2c2070,#1e1548 62%)', flash: 'radial-gradient(circle at 50% 50%,#f3e8ff,#a78bfa 26%,rgb(124 92 255/.34) 50%,transparent 74%)',
+  shim: 'linear-gradient(90deg,#fff 0%,#c4b5fd 22%,#8b6cff 42%,#22d3ee 62%,#f472b6 82%,#fff 100%)',
+  p0: '#6f5ccf', g0: '#0f0833', g1: '#5c33eb', g2: '#33d1f2',
+  ldbg: 'radial-gradient(ellipse 85% 75% at 50% 42%,#3a1a8a 0%,#1d0f52 38%,#0c0828 72%,#070914 100%)',
+  logo: 'linear-gradient(90deg,#fff 0%,#c4b5fd 20%,#7c5cff 40%,#22d3ee 60%,#f472b6 80%,#fff 100%)', bar: 'linear-gradient(90deg,#7c5cff,#22d3ee,#f472b6)', ldink: '#c4b5fd'
+};
+
 const CRITICAL = `
 @font-face{font-family:"Mona Sans";src:url(fonts/mona.woff2) format("woff2");font-weight:200 900;font-stretch:75% 125%;font-display:swap}
-html{background:#0b0720}body{margin:0}
-#ld{position:fixed;inset:0;z-index:100;overflow:hidden;background:radial-gradient(ellipse 85% 75% at 50% 42%,#3a1a8a 0%,#1d0f52 38%,#0c0828 72%,#070914 100%);color:#c4b5fd;font-family:"Mona Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none;cursor:pointer;touch-action:manipulation}
+:root{--pad:clamp(18px,5vw,72px);--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--dockh:76px;--ease:cubic-bezier(.2,.7,.2,1);--spring:cubic-bezier(.3,1.5,.5,1);--text:"Mona Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--serif:"Instrument Serif",Georgia,"Times New Roman",serif;--math:"Cambria Math","STIX Two Math","Noto Sans Math","Times New Roman",serif}
+@media(min-width:1040px){:root{--dockh:0px}}
+@media(max-height:500px) and (orientation:landscape){:root{--dockh:0px}}
+:root{${T(TOKENS)}}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--night)}
+.no-js,.no-js body{height:auto;overflow:auto}
+#deck{position:fixed;inset:0;overflow:hidden auto;overscroll-behavior:none;scroll-snap-type:y mandatory}
+.loading #deck{overflow:hidden}
+#ld{position:fixed;inset:0;z-index:100;overflow:hidden;background:var(--ldbg);color:var(--ldink);font-family:var(--text);-webkit-user-select:none;user-select:none;cursor:pointer;touch-action:none}
 .no-js #ld{display:none}
 .ld-p{position:absolute;inset:0;display:flex}.ld-p i{flex:1;border-right:1px solid rgba(255,255,255,.035)}
 .ld-a{position:absolute;inset:0;overflow:hidden}
@@ -63,21 +87,21 @@ html{background:#0b0720}body{margin:0}
 .ld-o{position:absolute;left:50%;top:50%;width:min(94vw,1100px);transform:translate(-50%,-50%);overflow:visible;pointer-events:none}
 .ld-o ellipse{fill:none;stroke-width:1.2;stroke-dasharray:4 12;animation:ld-od 6s linear infinite}
 @keyframes ld-od{to{stroke-dashoffset:-160}}
-.ld-f{position:absolute;inset:0;opacity:0;pointer-events:none;background:radial-gradient(circle at 50% 50%,#f3e8ff,#a78bfa 24%,rgba(124,92,255,.32) 48%,transparent 72%)}
+.ld-f{position:absolute;inset:0;opacity:0;pointer-events:none;background:var(--flash)}
 .ld-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.3rem;perspective:900px;padding:0 12px}
 .ld-l{font-size:clamp(2rem,8.4vw,7rem);font-weight:800;font-stretch:112%;letter-spacing:-.035em;line-height:1.1;white-space:nowrap;opacity:0}
 .ld-l.go{opacity:1}
 .ld-l .l{display:inline-block;animation:ld-in 1.25s cubic-bezier(.3,1.5,.5,1) both;animation-delay:calc(var(--i)*.055s + .1s)}
-.ld-l b{display:inline-block;font-weight:800;background:linear-gradient(90deg,#fff 0%,#c4b5fd 20%,#7c5cff 40%,#22d3ee 60%,#f472b6 80%,#fff 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:ld-sh 4s linear infinite;animation-delay:calc(var(--i)*-.28s)}
+.ld-l b{display:inline-block;font-weight:800;background:var(--logo);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:ld-sh 4s linear infinite;animation-delay:calc(var(--i)*-.28s)}
 @keyframes ld-in{from{transform:translateY(-220px) rotate(var(--r)) scale(.4);opacity:0}to{transform:none;opacity:1}}
 @keyframes ld-sh{to{background-position:-300% 0}}
 .ld-t{font-size:clamp(.72rem,2.2vw,1.05rem);font-weight:600;letter-spacing:.32em;text-transform:uppercase;margin-top:-.5rem;text-align:center;opacity:0;animation:ld-fd .9s .9s ease forwards}
 .ld-b{width:min(320px,62vw);height:2px;background:rgba(255,255,255,.12);overflow:hidden}
-.ld-b i{display:block;height:100%;background:linear-gradient(90deg,#7c5cff,#22d3ee,#f472b6);transform:scaleX(0);transform-origin:0 50%}
+.ld-b i{display:block;height:100%;background:var(--bar);transform:scaleX(0);transform-origin:0 50%}
 .ld-m,.ld-n{font-size:.78rem;font-weight:600;letter-spacing:.26em;text-transform:uppercase;text-align:center;min-height:1.2em}
 .ld-m{margin-top:-.5rem}
-.ld-s{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom,0px));text-align:center;font-size:.7rem;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:rgba(196,181,253,.62);opacity:0;animation:ld-fd .8s 1.3s ease forwards}
-@keyframes ld-fd{to{opacity:1}}
+.ld-s{position:absolute;left:0;right:0;bottom:calc(26px + var(--safe-b));text-align:center;font-size:.7rem;font-weight:600;letter-spacing:.26em;text-transform:uppercase;opacity:0;animation:ld-fd2 .8s 1.3s ease forwards}
+@keyframes ld-fd{to{opacity:1}}@keyframes ld-fd2{to{opacity:.62}}
 #ld.ld-out{opacity:0;transition:opacity .5s ease;pointer-events:none}
 @media(prefers-reduced-motion:reduce){.ld-a i,.ld-o ellipse,.ld-l b{animation:none}.ld-l .l{animation-duration:.01s;animation-delay:0s}.ld-o{display:none}}`.replace(/\n/g, '');
 
@@ -91,12 +115,12 @@ const LOADER = `<div id="ld" role="status" aria-label="Loading KavishTuitions">
 <div class="ld-s">tap anywhere to skip ›</div>
 </div>`;
 
-/* Runs before anything else. Loads the site itself, so the progress number is real:
-   it only moves when a file has actually arrived. */
-const BOOT = `(function(){
+/* Runs before anything else and loads the site itself. The number on screen is real:
+   it counts actual bytes arriving, so it's honest on a slow connection. */
+const boot = (siteBytes) => `(function(){
 var d=document,H=d.documentElement,W=window;H.classList.remove('no-js');H.classList.add('js');
 var ld=d.getElementById('ld'),calm=matchMedia('(prefers-reduced-motion: reduce)').matches,full=H.dataset.intro==='full'&&!calm;
-var B=W.KTB={wp:{s:0,on:1},skip:false,full:full,calm:calm,settled:false};
+var B=W.KTB={wp:{s:0,on:1},skip:false,full:full,calm:calm};
 var logo=d.getElementById('ldLogo');
 logo.innerHTML='KavishTuitions'.split('').map(function(c,i){return '<span class="l" style="--i:'+i+';--r:'+((i*37)%80-40)+'deg"><b>'+c+'</b></span>'}).join('');
 var cv=d.getElementById('ldc'),x=cv.getContext('2d'),dp=Math.min(W.devicePixelRatio||1,2),w,h;
@@ -112,33 +136,46 @@ var ro=o.r*m,t=Math.max(0,ro-(8+s*340)*o.r),c=Math.cos(o.a),q=Math.sin(o.a);
 x.strokeStyle='hsl('+(190+o.h*120)+',100%,'+(70+o.h*20)+'%)';x.lineWidth=.6+o.r*2.2;x.beginPath();x.moveTo(x0+c*t,y0+q*t);x.lineTo(x0+c*ro,y0+q*ro);x.stroke()}
 requestAnimationFrame(dr)}
 if(!calm)dr();
-var real=0,total=0,shown=0,t0=performance.now(),waiting=[],bar=d.getElementById('ldB'),num=d.getElementById('ldN'),msg=d.getElementById('ldM'),MS=['Sharpening pencils…','Loading formulas…','Solving for x…','Almost there…','Ready!'],pace=full?2700:520;
-function add(wt){total+=wt;var dn=0;return function(){if(!dn){dn=1;real+=wt;if(real>=total)B.settled=true}}}
-function tick(){var now=performance.now(),cap=B.skip?1:Math.min(1,(now-t0)/pace),tg=total?Math.min(real/total,cap):0;shown+=(tg-shown)*.14;if(tg>=1&&shown>.992)shown=1;
+var real=0,shown=0,t0=performance.now(),waiting=[],bar=d.getElementById('ldB'),num=d.getElementById('ldN'),msg=d.getElementById('ldM'),MS=['Sharpening pencils…','Loading formulas…','Solving for x…','Almost there…','Ready!'],pace=full?2700:420;
+var parts={css:0,font:0,data:0,site:0},wt={css:.08,font:.08,data:.04,site:.8};
+function up(k,v){parts[k]=v;real=0;for(var p in parts)real+=parts[p]*wt[p]}
+function tick(){var now=performance.now(),cap=B.skip?1:Math.min(1,(now-t0)/pace),tg=Math.min(real,cap);shown+=(tg-shown)*.14;if(tg>=.999&&shown>.99)shown=1;
 bar.style.transform='scaleX('+shown+')';num.textContent=Math.round(shown*100);msg.textContent=MS[Math.min(4,shown*4.2|0)];
 if(shown>=1&&B.failed&&!W.KTAPP){B.kill();return}if(shown>=1&&waiting.length){var q=waiting.slice();waiting.length=0;q.forEach(function(f){f()})}
 if(shown<1||waiting.length)requestAnimationFrame(tick);else B.done=true}
 B.whenDone=function(f){if(B.done)f();else waiting.push(f)};
-var cssDone=add(8),l=d.getElementById('kcss');function cs(){l.media='all';cssDone()}if(l.sheet)cs();else{l.onload=cs;l.onerror=cssDone}
-var fontDone=add(10);function fg(){logo.classList.add('go');fontDone()}
+var l=d.getElementById('kcss');function cdone(){l.media='all';up('css',1)}if(l.sheet)cdone();else{l.onload=cdone;l.onerror=function(){up('css',1)}}
+function fg(){logo.classList.add('go');up('font',1)}
 if(d.fonts&&d.fonts.load){var ft=setTimeout(fg,2200);d.fonts.load('800 40px "Mona Sans"').then(function(){clearTimeout(ft);fg()},fg)}else fg();
-var files=[['js/vendor/gsap.min.js',24],['js/vendor/ScrollTrigger.min.js',15],['js/vendor/lenis.min.js',6],['js/content.js',3],['js/cosmos.js',10],['js/app.js',24]];
-files.forEach(function(f){var dn=add(f[1]),s=d.createElement('script');s.src=f[0];s.async=false;s.onload=dn;s.onerror=function(){B.failed=true;dn()};d.head.appendChild(s)});
+function tag(u,k,done){var s=d.createElement('script');s.src=u;s.onload=function(){up(k,1);done&&done()};s.onerror=function(){B.failed=true;up(k,1);done&&done()};d.head.appendChild(s)}
+function stream(u,size,k,done){if(!W.fetch||!W.ReadableStream||location.protocol==='file:')return tag(u,k,done);
+fetch(u).then(function(r){if(!r.ok||!r.body)throw 0;var rd=r.body.getReader(),c=[],got=0;return(function pump(){return rd.read().then(function(p){if(p.done)return new Blob(c,{type:'text/javascript'});c.push(p.value);got+=p.value.length;up(k,Math.min(.98,got/size));return pump()})})()}).then(function(b){var s=d.createElement('script'),u2=URL.createObjectURL(b);s.src=u2;s.onload=function(){URL.revokeObjectURL(u2);up(k,1);done&&done()};s.onerror=function(){B.failed=true;up(k,1);done&&done()};d.head.appendChild(s)}).catch(function(){tag(u,k,done)})}
+tag('js/content.js','data',function(){stream('js/site.min.js',${siteBytes},'site')});
 ld.addEventListener('pointerdown',function(){B.skip=true;if(B.onSkip)B.onSkip()});
 requestAnimationFrame(tick);
-B.kill=function(){wp.on=0;removeEventListener('resize',sz);if(ld.parentNode){ld.classList.add('ld-out');setTimeout(function(){ld.remove()},600)}};
-setTimeout(function(){if(!W.KTAPP)B.kill()},14000);
+B.kill=function(){wp.on=0;removeEventListener('resize',sz);H.classList.remove('loading');if(!W.KTAPP){H.classList.remove('js');H.classList.add('no-js')}if(ld.parentNode){ld.classList.add('ld-out');setTimeout(function(){ld.remove()},600)}};
+setTimeout(function(){if(!W.KTAPP)B.kill()},15000);
 })();`.replace(/\n/g, '');
 
-function page(p) {
+function html(p, siteBytes) {
   const cur = h => (h === p.file ? ' aria-current="page"' : '');
   const nav = NAV.slice(0, 5).map(([h, n]) => `<a href="${h}"${cur(h)}>${n}</a>`).join('');
   const dockItem = (h, label, icon) => `<a href="${h}"${cur(h)}>${ic(icon)}<span>${label}</span></a>`;
-  const foot = NAV.map(([h, n]) => `<li><a href="${h}">${n}</a></li>`).join('');
-  const body = fs.readFileSync(path.join(__dirname, 'pages', p.src), 'utf8').replace(/\{\{i:([a-z]+)\}\}/g, (_, n) => ic(n)).replace(/\{\{wa\}\}/g, WA);
+  const links = NAV.map(([h, n]) => `<li><a href="${h}">${n}</a></li>`).join('');
+  const body = fs.readFileSync(path.join(__dirname, 'sections', p.src), 'utf8').replace(/\r\n/g, '\n').replace(/\{\{i:([a-z]+)\}\}/g, (_, n) => ic(n)).replace(/\{\{wa\}\}/g, WA);
   const url = SITE + (p.file === 'index.html' ? '' : p.file);
+  const next = p.next ? `<a class="btn btn--sun" href="${p.next[0]}" data-a>${p.next[1]}${ic('arrow')}</a>` : '';
+  const foot = `<section class="s s--full s--foot" id="end" data-fig="none" data-dim="0" data-sky="0" aria-label="Site links"><div class="s__in" style="flex-direction:column;align-items:stretch">
+  <div class="txt foot"><div class="foot__grid">
+    <div data-a><a class="logo" href="index.html">${LOGO}<span>KavishTuitions</span></a><p class="foot__fine opt">Maths &amp; Add Maths tuition with Kavish Sunassee, proudly based in Moka, Mauritius.</p>${next ? `<p class="foot__cta">${next}</p>` : ''}</div>
+    <nav aria-label="Pages" data-a><h2>Pages</h2><ul>${links}</ul></nav>
+    <div data-a><h2>Talk to Kavish</h2><a href="${WA}" target="_blank" rel="noopener">WhatsApp +230 5923 8436</a><br><a href="tel:+23059238436">Call +230 5923 8436</a></div>
+  </div>
+  <p class="foot__fine" data-a>Independent tuition resource, not affiliated with any exam board or ministry. Built by Sungkur Doorgesh.</p></div>
+  <div class="fw" aria-hidden="true">KAVISH</div>
+</div></section>`;
   return `<!DOCTYPE html>
-<html lang="en" class="no-js" data-intro="${p.file === 'index.html' ? 'full' : 'short'}">
+<html lang="en" class="no-js loading" data-intro="${p.file === 'index.html' ? 'full' : 'short'}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -163,28 +200,20 @@ function page(p) {
 <body data-page="${p.name}">
 ${sprite}
 ${LOADER}
-<script>${BOOT}</script>
+<script>${boot(siteBytes)}</script>
 <div class="sky" aria-hidden="true"><i></i><i></i><i></i></div>
 <canvas id="cosmos" aria-hidden="true"></canvas>
-<div class="prog" aria-hidden="true"></div>
 <div class="kcur" aria-hidden="true"></div>
-<header class="top"><div class="wrap top__in">
+<header class="top"><div class="top__in">
   <a class="logo" href="index.html" aria-label="KavishTuitions home">${LOGO}<span>KavishTuitions</span></a>
   <nav class="nav" aria-label="Main">${nav}</nav>
-  <div class="top__end"><a class="streak" href="lab.html" id="topStreak" hidden aria-label="Your streak">${ic('flame', '')}<span></span></a><div id="navAuth"></div><button type="button" class="btn btn--sun btn--sm top__join" data-join>Join</button></div>
+  <div class="top__end"><a class="streak" href="lab.html" id="topStreak" hidden aria-label="Your streak">${ic('flame', '')}<span></span></a><button type="button" class="btn btn--sun btn--sm top__join" data-join>Join</button></div>
 </div></header>
-<main id="main" data-page="${p.name}">
+<main id="deck">
 ${body}
+${foot}
 </main>
-<footer class="foot"><div class="wrap">
-  <div class="foot__grid">
-    <div><a class="logo" href="index.html">${LOGO}<span>KavishTuitions</span></a><p class="foot__fine">Maths &amp; Add Maths tuition with Kavish Sunassee, proudly based in Moka, Mauritius.</p></div>
-    <nav aria-label="Pages"><h2>Pages</h2><ul>${foot}</ul></nav>
-    <div><h2>Talk to Kavish</h2><a href="${WA}" target="_blank" rel="noopener">WhatsApp +230 5923 8436</a><br><a href="tel:+23059238436">Call +230 5923 8436</a></div>
-  </div>
-  <p class="foot__fine">Independent tuition resource, not affiliated with any exam board or ministry. Built by Sungkur Doorgesh.</p>
-  <div class="fw" aria-hidden="true">KAVISH</div>
-</div></footer>
+<div class="pips" aria-hidden="true"></div>
 <nav class="dock" aria-label="Quick menu">
   ${dockItem('index.html', 'Home', 'home')}
   ${dockItem('tuition.html', 'Tuition', 'cap')}
@@ -199,14 +228,37 @@ ${body}
 }
 
 const pages = [
-  { name: 'home', file: 'index.html', src: 'home.html', title: 'Kavish Sunassee: Maths & Add Maths tutor in Moka, Mauritius', desc: "Hi, I'm Kavish, a Maths and Add Maths tutor from Moka, Mauritius. Meet me, then explore video lessons, notes and worked solutions from NCE to HSC / A-Level." },
-  { name: 'tuition', file: 'tuition.html', src: 'tuition.html', title: 'Tuition: Maths & Add Maths, NCE to HSC | KavishTuitions', desc: 'Video lessons, downloadable notes and fully worked solutions for Mauritian secondary students, from Grade 9 NCE to HSC / A-Level.' },
-  { name: 'courses', file: 'courses.html', src: 'courses.html', title: 'Courses: your lesson path | KavishTuitions', desc: 'Follow your lesson path by grade. Notes, videos and worked solutions for NCE, SC / IGCSE and HSC / A-Level, with free preview lessons.' },
-  { name: 'lab', file: 'lab.html', src: 'lab.html', title: 'Maths Lab: Swipe Maths and the parabola explorer | KavishTuitions', desc: 'Swipe through true or false maths, keep your streak alive, and drag a live parabola with your finger.' },
-  { name: 'pricing', file: 'pricing.html', src: 'pricing.html', title: 'Pricing: from Rs 500 a month | KavishTuitions', desc: 'Monthly, term and full-year access to Maths and Add Maths lessons, paid via MCB Juice. No card needed.' },
+  { name: 'home', file: 'index.html', src: 'home.html', next: ['tuition.html', 'See the tuition'], title: 'Kavish Sunassee: Maths & Add Maths tutor in Moka, Mauritius', desc: "Hi, I'm Kavish, a Maths and Add Maths tutor from Moka, Mauritius. Meet me, then explore video lessons, notes and worked solutions from NCE to HSC / A-Level." },
+  { name: 'tuition', file: 'tuition.html', src: 'tuition.html', next: ['courses.html', 'See the courses'], title: 'Tuition: Maths & Add Maths, NCE to HSC | KavishTuitions', desc: 'Video lessons, downloadable notes and fully worked solutions for Mauritian secondary students, from Grade 9 NCE to HSC / A-Level.' },
+  { name: 'courses', file: 'courses.html', src: 'courses.html', next: ['lab.html', 'Try the Maths Lab'], title: 'Courses: your lesson path | KavishTuitions', desc: 'Follow your lesson path by grade. Notes, videos and worked solutions for NCE, SC / IGCSE and HSC / A-Level, with free preview lessons.' },
+  { name: 'lab', file: 'lab.html', src: 'lab.html', next: ['pricing.html', 'See pricing'], title: 'Maths Lab: Swipe Maths and the parabola explorer | KavishTuitions', desc: 'Swipe through true or false maths, keep your streak alive, and drag a live parabola with your finger.' },
+  { name: 'pricing', file: 'pricing.html', src: 'pricing.html', next: ['contact.html', 'Talk to Kavish'], title: 'Pricing: from Rs 500 a month | KavishTuitions', desc: 'Monthly, term and full-year access to Maths and Add Maths lessons, paid via MCB Juice. No card needed.' },
   { name: 'contact', file: 'contact.html', src: 'contact.html', title: 'Contact Kavish | KavishTuitions', desc: 'Message Kavish Sunassee on WhatsApp or by phone about Maths and Add Maths tuition in Moka, Mauritius.' }
 ];
-for (const p of pages) fs.writeFileSync(path.join(ROOT, p.file), page(p));
-fs.writeFileSync(path.join(ROOT, 'favicon.svg'), LOGO.replace('aria-hidden="true"', 'xmlns="http://www.w3.org/2000/svg"'));
-fs.writeFileSync(path.join(ROOT, 'site.webmanifest'), JSON.stringify({ name: 'KavishTuitions', short_name: 'Kavish', start_url: './index.html', display: 'standalone', background_color: '#0b0720', theme_color: '#0b0720', icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml' }, { src: 'images/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'images/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
-console.log('built', pages.length, 'pages');
+
+(async () => {
+  const esbuild = require(process.env.ESBUILD || 'esbuild');
+  const read = f => fs.readFileSync(path.join(__dirname, f), 'utf8').replace(/\r\n/g, '\n');
+  /* one bundle: motion library, figures, 3D engine, app */
+  const min = code => esbuild.transform(code, { minify: true, target: 'es2017', legalComments: 'none' }).then(r => r.code);
+  const gsapCode = read('vendor/gsap.min.js');
+  const own = await min([read('js/figs.js'), read('js/cosmos.js'), read('js/app.js')].join('\n;\n'));
+  const bundle = gsapCode + '\n;' + own;
+  fs.mkdirSync(path.join(ROOT, 'js'), { recursive: true });
+  fs.writeFileSync(path.join(ROOT, 'js/site.min.js'), bundle);
+  const css = (await esbuild.transform(read('css/site.css'), { loader: 'css', minify: true })).code;
+  fs.mkdirSync(path.join(ROOT, 'css'), { recursive: true });
+  fs.writeFileSync(path.join(ROOT, 'css/site.css'), css);
+  const siteBytes = Buffer.byteLength(bundle);
+  for (const p of pages) fs.writeFileSync(path.join(ROOT, p.file), html(p, siteBytes));
+  fs.writeFileSync(path.join(ROOT, 'favicon.svg'), LOGO.replace('aria-hidden="true">', 'xmlns="http://www.w3.org/2000/svg">' + GRAD));
+  fs.writeFileSync(path.join(ROOT, 'site.webmanifest'), JSON.stringify({ name: 'KavishTuitions', short_name: 'Kavish', start_url: './index.html', display: 'standalone', background_color: '#0b0720', theme_color: '#0b0720', icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml' }, { src: 'images/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'images/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
+  /* the cache engine gets a new name whenever anything changes */
+  const core = ['css/site.css', 'js/site.min.js', 'js/content.js', 'fonts/mona.woff2', 'fonts/serif-i.woff2', 'favicon.svg', 'index.html'];
+  const hash = require('crypto').createHash('sha1');
+  [...core, ...pages.map(p => p.file)].forEach(f => hash.update(fs.readFileSync(path.join(ROOT, f))));
+  const ver = hash.digest('hex').slice(0, 10);
+  fs.writeFileSync(path.join(ROOT, 'sw.js'), (await min(read('sw.js').replace('@@VERSION@@', ver).replace('@@CORE@@', JSON.stringify(core)))));
+  const gz = f => require('zlib').gzipSync(fs.readFileSync(path.join(ROOT, f)), { level: 9 }).length;
+  console.log('built', pages.length, 'pages, cache', ver, '| gzip: site', Math.round(gz('js/site.min.js') / 1024) + 'KB, css', Math.round(gz('css/site.css') / 1024) + 'KB, home', Math.round(gz('index.html') / 1024) + 'KB');
+})().catch(e => { console.error(e); process.exit(1); });

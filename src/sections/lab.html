@@ -1,0 +1,39 @@
+<section class="s s--full s--tool" id="swipe" data-fig="none" data-dim="0" data-sky="0" aria-label="Swipe Maths"><div class="s__in" style="flex-direction:column">
+  <div class="game" id="game"></div>
+</div></section>
+
+<section class="s s--full s--tool" id="parabola" data-fig="none" data-dim="0" aria-label="Parabola explorer"><div class="s__in" style="flex-direction:column">
+  <div class="pb">
+    <div class="pb__top" data-a>
+      <p class="pb__eq" id="eq" aria-live="polite"></p>
+      <div class="lvlpick" role="group" aria-label="Mode"><button type="button" id="mMaths" aria-pressed="true">Maths</button><button type="button" id="mAdd" aria-pressed="false">Add Maths</button></div>
+    </div>
+    <canvas id="graph" data-nodrag role="img" aria-label="Graph of the quadratic. Drag the points, or use the sliders below."></canvas>
+    <p class="tipline" id="why-l" aria-live="polite"></p>
+    <div class="sliders">
+      <label>a = <output id="oa"></output><input id="ia" type="range" min="-4" max="4" step=".25" value="1"></label>
+      <label>b = <output id="ob"></output><input id="ib" type="range" min="-6" max="6" step=".5" value="-2"></label>
+      <label>c = <output id="oc"></output><input id="ic" type="range" min="-8" max="8" step=".5" value="-3"></label>
+    </div>
+    <dl class="read">
+      <div><dt>Discriminant</dt><dd id="rD"></dd></div>
+      <div><dt>Roots</dt><dd id="rR"></dd></div>
+      <div><dt>Vertex</dt><dd id="rV"></dd></div>
+      <div><dt>Nature</dt><dd id="rN"></dd></div>
+    </dl>
+  </div>
+</div></section>
+
+<section class="s s--center" id="quick" data-fig="sum" data-dim=".08" data-sky="1" aria-label="Quick fire"><div class="s__in">
+  <div class="txt" style="text-align:left;align-items:stretch;width:100%;max-width:26em">
+    <form class="qz" id="quiz" novalidate>
+      <span class="eyebrow">Quick fire</span>
+      <div class="game__top"><span>Streak <b id="qS">0</b></span><span>Best <b id="qB">0</b></span></div>
+      <p class="q" id="qq">3x + 5 = 20</p>
+      <label for="qin" id="qh" class="mute">Solve for x</label>
+      <div class="ans"><input class="inp" id="qin" type="text" inputmode="decimal" autocomplete="off" placeholder="Your answer"><button class="btn btn--sun">Check</button></div>
+      <p id="mark" role="status" class="mute" style="min-height:1.4em"></p>
+      <button type="button" class="btn btn--line btn--sm" id="skip">Skip this one</button>
+    </form>
+  </div>
+</div></section>

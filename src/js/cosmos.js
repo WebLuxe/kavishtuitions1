@@ -1,10 +1,9 @@
-/* Cosmos: the living 3D world behind every page.
-   Three layers share one WebGL canvas that never reloads:
-     stars   - quads that stretch into warp streaks
-     glyphs  - chrome tube maths symbols you can flick with a finger
-     dust    - a particle sculpture that morphs between mathematical surfaces
-   Everything heavy happens in the vertex shader, so a frame is a few uniforms.
-   Quality adapts itself to the device, and drawing stops when nothing is visible. */
+/* Cosmos: the 3D world behind every page, on one canvas that never reloads.
+     stars   quads that stretch into warp streaks
+     glyphs  chrome tube maths symbols you can flick
+     dust    particles that morph between recognisable maths figures
+   A frame is a handful of uniforms; figures are built only when needed, quality
+   adapts to the device, and the frame rate drops whenever nothing is happening. */
 (function () {
   'use strict';
 
@@ -13,9 +12,9 @@
     ok: false,
     /* Tween any of these with GSAP. The renderer just reads them. */
     s: {
-      a: 0, b: 0, mix: 0,          // sculpture shape A, shape B and the blend
-      x: 0, y: 0, scale: 1,        // sculpture position and size
-      yaw: 0, pitch: 1.05, spin: .14, hue: 0,
+      mix: 1,                      // morph from figure A to figure B
+      x: 0, y: 0, scale: 1,        // figure position and size
+      yaw: 0, pitch: 0, spin: 0,
       alpha: 1, dim: 1, burst: 1, size: 1,
       stars: 1, warp: 0, drift: 1,
       glyphs: 0, gdim: 1, gx: 0, gy: 0,     // chrome symbols: visibility and group offset
@@ -26,71 +25,43 @@
     scrollV: 0
   };
 
-  /* Shapes, in the order the shader's shape() expects */
-  C.SHAPES = { knot: 0, klein: 1, planet: 2, wave: 3, galaxy: 4, mobius: 5, helix: 6, saddle: 7 };
-
   var DUST_VS = [
-    'attribute vec3 aS;',
-    'uniform float uT,uA,uB,uMix,uBurst,uYaw,uPitch,uScale,uSize,uAlpha,uDpr,uHue,uTouchF,uRip;',
-    'uniform vec2 uFit,uOff,uTouch,uRipC;',
+    'attribute vec4 aA,aB;attribute vec2 aS;',
+    'uniform float uT,uMix,uBurst,uYaw,uPitch,uScale,uSize,uAlpha,uDpr,uTouchF,uRip;',
+    'uniform vec2 uFit,uOff,uTouch,uRipC;uniform vec3 uC0;',
     'varying vec3 vC;varying float vA;',
-    'const float TAU=6.2831853;',
     'vec3 pal(float t){t=fract(t);',
-    ' vec3 a=vec3(.52,.38,1.),b=vec3(.25,.88,.98),c=vec3(1.,.47,.78);',
+    ' vec3 a=vec3(.56,.42,1.),b=vec3(.28,.9,.98),c=vec3(1.,.5,.8);',
     ' if(t<.34)return mix(a,b,t*2.94);if(t<.67)return mix(b,c,(t-.34)*3.03);return mix(c,a,(t-.67)*3.03);}',
-    'vec3 knot(float u,float v){float t=u*TAU,a=v*TAU;',
-    ' vec3 c=vec3((2.+cos(3.*t))*cos(2.*t),(2.+cos(3.*t))*sin(2.*t),sin(3.*t)*1.25)*.31;',
-    ' float e=t+.02;vec3 d=vec3((2.+cos(3.*e))*cos(2.*e),(2.+cos(3.*e))*sin(2.*e),sin(3.*e)*1.25)*.31-c;',
-    ' vec3 T=normalize(d),N=normalize(cross(T,vec3(.31,.22,.92))),B=cross(T,N);',
-    ' return c+.13*(cos(a)*N+sin(a)*B);}',
-    'vec3 klein(float u,float v){float a=u*TAU,b=v*TAU,k=2.+cos(a*.5)*sin(b)-sin(a*.5)*sin(2.*b);',
-    ' return vec3(k*cos(a),k*sin(a),sin(a*.5)*sin(b)+cos(a*.5)*sin(2.*b))*.37;}',
-    'vec3 planet(float u,float v,float r){float a=u*TAU;',
-    ' if(r<.26){float q=1.18+.42*v*v;return vec3(cos(a)*q,sin(a)*q*.96,(r-.13)*.14);}',
-    ' float z=v*2.-1.,s=sqrt(1.-z*z);return vec3(s*cos(a),s*sin(a),z)*.74;}',
-    'vec3 wave(float u,float v){float x=(u-.5)*2.5,y=(v-.5)*2.5;',
-    ' return vec3(x,y,.2*sin(x*3.1+uT*1.1)*cos(y*2.7-uT*.8)+.1*sin(x*7.+y*5.+uT));}',
-    'vec3 galaxy(float u,float v,float r){float q=pow(v,.62)*1.3,arm=floor(r*3.)*TAU/3.;',
-    ' float a=arm+q*4.4+(u-.5)*1.1/(q*2.2+.5);',
-    ' return vec3(cos(a)*q,sin(a)*q,(fract(r*37.)-.5)*.22*(1.35-q));}',
-    'vec3 mobius(float u,float v){float a=u*TAU,w=(v-.5)*.95,k=1.+w*cos(a*.5);',
-    ' return vec3(k*cos(a),k*sin(a),w*sin(a*.5))*.8;}',
-    'vec3 helix(float u,float v,float r){float a=u*TAU*2.4,s=step(.5,fract(r*9.))*3.14159;',
-    ' float q=.46,y=(u-.5)*2.5;',
-    ' if(fract(r*3.)<.24){float k=(v-.5)*2.;return vec3(q*k*cos(floor(a*2.)/2.),y,q*k*sin(floor(a*2.)/2.));}',
-    ' return vec3(q*cos(a+s)+(v-.5)*.05,y,q*sin(a+s));}',
-    'vec3 saddle(float u,float v){float x=(u-.5)*2.,y=(v-.5)*2.;return vec3(x,y,(x*x-y*y)*.5);}',
-    'vec3 shape(float s,vec3 q){',
-    ' if(s<.5)return knot(q.x,q.y);if(s<1.5)return klein(q.x,q.y);if(s<2.5)return planet(q.x,q.y,q.z);',
-    ' if(s<3.5)return wave(q.x,q.y);if(s<4.5)return galaxy(q.x,q.y,q.z);if(s<5.5)return mobius(q.x,q.y);',
-    ' if(s<6.5)return helix(q.x,q.y,q.z);return saddle(q.x,q.y);}',
     'void main(){',
-    ' vec3 p=uMix<.001?shape(uA,aS):(uMix>.999?shape(uB,aS):mix(shape(uA,aS),shape(uB,aS),uMix*uMix*(3.-2.*uMix)));',
-    ' float r=aS.z;',
-    ' p+=vec3(sin(r*91.+uT),cos(r*57.-uT*.8),sin(r*33.+uT*.6))*.012;',
+    ' float r=aS.x,m=clamp(uMix*1.75-r*.75,0.,1.);m=m*m*(3.-2.*m);',
+    ' vec3 p=mix(aA.xyz,aB.xyz,m);float role=mix(aA.w,aB.w,m),fly=sin(3.14159*m);',
+    ' vec3 n=vec3(sin(aS.y*37.+uT*.7),cos(r*91.-uT*.6),sin(aS.y*53.+r*29.));',
+    ' p+=n*(.0035+fly*.42);',
+    ' p.z+=.03*sin(p.x*2.6+uT*.9)*cos(p.y*2.2-uT*.5);',
     ' vec3 dir=normalize(vec3(sin(r*113.),cos(r*71.),sin(r*197.))+.001);',
     ' p+=dir*uBurst*(1.1+r*2.6);',
     ' float cy=cos(uYaw),sy=sin(uYaw),cp=cos(uPitch),sp=sin(uPitch);',
-    ' vec3 q=vec3(cy*p.x-sy*p.y,cp*(sy*p.x+cy*p.y)-sp*p.z,sp*(sy*p.x+cy*p.y)+cp*p.z);',
-    ' float k=3.1/(3.1-q.z);',
+    ' vec3 q=vec3(cy*p.x+sy*p.z,p.y,-sy*p.x+cy*p.z);q=vec3(q.x,cp*q.y-sp*q.z,sp*q.y+cp*q.z);',
+    ' float k=3.1/(3.1-q.z*uScale*.6);',
     ' vec2 c=q.xy*k*uScale*uFit+uOff;',
     ' vec2 t=c-uTouch;t.x/=uFit.x/uFit.y;float d2=dot(t,t);',
     ' vec2 w=normalize(t+.0001);',
-    ' c+=(w*.34+vec2(-w.y,w.x)*.22)*uTouchF*exp(-d2*9.)*uFit/uFit.y;',
-    ' vec2 g=c-uRipC;g.x/=uFit.x/uFit.y;float gl=length(g);',
-    ' float ring=exp(-pow(gl-uRip*2.2,2.)*26.)*(1.-uRip);',
+    ' c+=(w*.3+vec2(-w.y,w.x)*.2)*uTouchF*exp(-d2*9.)*uFit/uFit.y;',
+    ' vec2 g=c-uRipC;g.x/=uFit.x/uFit.y;float gl=length(g),ring=exp(-pow(gl-uRip*2.2,2.)*26.)*(1.-uRip);',
     ' c+=normalize(g+.0001)*ring*.14;',
     ' gl_Position=vec4(c,0.,1.);',
-    ' float f=abs(q.z-.15);',
-    ' float sz=uSize*k*(1.+f*1.35)*(.75+r*.75);',
-    ' gl_PointSize=max(sz,1.)*uDpr;',
-    ' vC=mix(pal(aS.x*.62+aS.y*.2+uHue),vec3(1.),.14+ring*.6+.25*smoothstep(.97,1.,fract(r*53.)));',
-    ' vA=uAlpha*(1.1/(1.+f*f*3.2))*(.55+.5*clamp(q.z+.7,0.,1.5))*(1.-uBurst*.5);',
+    ' float bright=role<.25?.42:(role<.75?.85:1.);',
+    ' gl_PointSize=max(uSize*k*(role>.75?1.08:(role<.25?.86:1.))*(.8+r*.5),1.)*uDpr;',
+    ' float hue=p.x*.24+p.y*.18+uT*.02+.04;vec3 h=pal(hue);',
+    ' vC=role<.25?mix(uC0,h,.4):(role>.75?mix(pal(hue+.36),vec3(1.),.28):mix(h,vec3(1.),.08));',
+    ' vC=mix(vC,vec3(1.),ring*.6+fly*.12);',
+    ' vA=uAlpha*bright*(1.-uBurst*.5);',
     '}'].join('\n');
 
   var DUST_FS = [
     'precision mediump float;varying vec3 vC;varying float vA;',
-    'void main(){float d=length(gl_PointCoord-.5);float a=smoothstep(.5,.08,d);a*=a*vA;gl_FragColor=vec4(vC*a,a*.5);}'
+    'void main(){float d=length(gl_PointCoord-.5);float a=smoothstep(.5,.12,d);a*=a*vA;gl_FragColor=vec4(vC*a,a*.9);}'
   ].join('\n');
 
   var STAR_VS = [
@@ -130,19 +101,17 @@
     ' gl_Position=vec4(q.xy*k*uFit,-q.z*.2,1.);}'].join('\n');
 
   var GLYPH_FS = [
-    'precision mediump float;varying vec3 vN,vV;uniform float uHue;',
+    'precision mediump float;varying vec3 vN,vV;uniform vec3 uG0,uG1,uG2;',
     'vec3 env(vec3 r){float y=r.y*.5+.5;',
-    ' vec3 c=mix(vec3(.06,.03,.2),vec3(.36,.2,.92),smoothstep(.08,.6,y));',
-    ' c=mix(c,vec3(.2,.82,.95),smoothstep(.56,.66,y)*(1.-smoothstep(.68,.84,y)));',
+    ' vec3 c=mix(uG0,uG1,smoothstep(.08,.6,y));',
+    ' c=mix(c,uG2,smoothstep(.56,.66,y)*(1.-smoothstep(.68,.84,y)));',
     ' c=mix(c,vec3(.98,.92,1.),smoothstep(.8,.93,y));',
     ' float s=max(dot(r,normalize(vec3(.5,.55,.65))),0.);c+=vec3(1.,.5,.78)*pow(s,14.)*.9;',
     ' s=max(dot(r,normalize(vec3(-.7,-.1,.7))),0.);c+=vec3(1.,.8,.5)*pow(s,40.)*1.4;',
     ' return c;}',
     'void main(){vec3 n=normalize(vN),v=normalize(vV),r=reflect(-v,n);',
     ' float f=pow(1.-max(dot(n,v),0.),3.);',
-    ' vec3 c=env(r)*(1.02+uHue*.0);',
-    ' c+=vec3(.68,.56,1.)*f*1.05;',
-    ' gl_FragColor=vec4(c,1.);}'].join('\n');
+    ' gl_FragColor=vec4(env(r)+vec3(.68,.56,1.)*f*1.05,1.);}'].join('\n');
 
   var QUAD_VS = 'attribute vec2 aQ;varying vec2 vP;void main(){vP=aQ;gl_Position=vec4(aQ,0.,1.);}';
 
@@ -262,7 +231,7 @@
     { n: 'int', s: [ // ∫
       { p: [[.62, .78], [.46, .94], [.26, .86], [.14, .44], [.04, 0], [-.06, -.46], [-.18, -.88], [-.4, -.96], [-.6, -.76]], w: function (t) { return .55 + .85 * Math.sin(Math.PI * t); } }] },
     { n: 'inf', closed: true, s: [ // ∞
-      { p: (function () { var a = [], i, t, c, q; for (i = 0; i < 14; i++) { t = i / 14 * TAU; c = 1 + Math.pow(Math.sin(t), 2); a.push([1.05 * Math.cos(t) / c, 1.2 * Math.sin(t) * Math.cos(t) / c, .16 * Math.sin(t)]); } return a; })(), w: function (t) { return .85 + .25 * Math.cos(t * TAU * 2); } }] },
+      { p: (function () { var a = [], i, t, c; for (i = 0; i < 14; i++) { t = i / 14 * TAU; c = 1 + Math.pow(Math.sin(t), 2); a.push([1.05 * Math.cos(t) / c, 1.2 * Math.sin(t) * Math.cos(t) / c, .16 * Math.sin(t)]); } return a; })(), w: function (t) { return .85 + .25 * Math.cos(t * TAU * 2); } }] },
     { n: 'theta', s: [ // θ
       { closed: true, p: (function () { var a = [], i, t; for (i = 0; i < 12; i++) { t = i / 12 * TAU; a.push([.58 * Math.cos(t), .92 * Math.sin(t), 0]); } return a; })(), w: function (t) { return .85 + .3 * Math.pow(Math.cos(t * TAU), 2); } },
       { p: [[-.56, 0], [0, .02], [.56, 0]], w: one }] },
@@ -334,6 +303,8 @@
   /* ─── GL boot ─── */
   var cv, gl, P = {}, B = {}, W = 1, H = 1, dpr = 1, fitX = 1, fitY = 1;
   var tier = 2, dustCount = 0, dustMax = 0, starCount = 0, gMeshes = null, mask = null;
+  var pal = { c0: [.44, .36, .81], g0: [.06, .03, .2], g1: [.36, .2, .92], g2: [.2, .82, .95] };
+  var figA = null, figB = null, figName = '', figCache = {}, figOrder = [], figQueue = null, lastInput = 0, nextFrame = 0;
   var touch = { x: 9, y: 9, f: 0, tf: 0 }, rip = { x: 0, y: 0, t: 1 }, tilt = { x: 0, y: 0, tx: 0, ty: 0 };
   var time = 0, last = 0, frames = 0, spent = 0, slowRuns = 0, running = false;
   var glyphs = [], layout = null, grabbed = null;
@@ -362,25 +333,27 @@
   var COUNTS = [12000, 24000, 46000], DPR = [1, 1.5, 2];
 
   function setup() {
-    gl = cv.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', stencil: false, depth: true, preserveDrawingBuffer: !!C.debug });
+    gl = cv.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'default', stencil: false, depth: true, preserveDrawingBuffer: !!C.debug });
     if (!gl) return false;
     tier = window.KT_LITE ? 0 : pickTier();
     gl.enable(gl.BLEND);
     gl.clearColor(0, 0, 0, 0);
     gl.depthFunc(gl.LEQUAL);
 
-    P.dust = program(DUST_VS, DUST_FS, ['aS'], ['uT', 'uA', 'uB', 'uMix', 'uBurst', 'uYaw', 'uPitch', 'uScale', 'uSize', 'uAlpha', 'uDpr', 'uHue', 'uFit', 'uOff', 'uTouch', 'uTouchF', 'uRip', 'uRipC']);
+    P.dust = program(DUST_VS, DUST_FS, ['aA', 'aB', 'aS'], ['uT', 'uMix', 'uBurst', 'uYaw', 'uPitch', 'uScale', 'uSize', 'uAlpha', 'uDpr', 'uFit', 'uOff', 'uTouch', 'uTouchF', 'uRip', 'uRipC', 'uC0']);
     P.star = program(STAR_VS, STAR_FS, ['aP', 'aC'], ['uT', 'uWarp', 'uDpr', 'uAlpha', 'uFit', 'uRes']);
-    P.glyph = program(GLYPH_VS, GLYPH_FS, ['aPos', 'aNor'], ['uR', 'uP', 'uS', 'uFit', 'uHue']);
+    P.glyph = program(GLYPH_VS, GLYPH_FS, ['aPos', 'aNor'], ['uR', 'uP', 'uS', 'uFit', 'uG0', 'uG1', 'uG2']);
     P.sky = program(QUAD_VS, SKY_FS, ['aQ'], ['uSky', 'uSun', 'uAsp']);
     P.mask = program(QUAD_VS, MASK_FS, ['aQ'], ['uTex', 'uMaskA', 'uScale', 'uAsp', 'uW', 'uE', 'uNight']);
 
-    /* dust: every particle is just (u, v, random); the shader does the rest */
-    dustMax = COUNTS[2];
-    var i, d = new Float32Array(dustMax * 3);
-    for (i = 0; i < dustMax; i++) { d[i * 3] = Math.random(); d[i * 3 + 1] = Math.random(); d[i * 3 + 2] = Math.random(); }
-    B.dust = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, B.dust); gl.bufferData(gl.ARRAY_BUFFER, d, gl.STATIC_DRAW);
-    dustCount = COUNTS[tier];
+    /* dust: only as many particles as this device will ever use */
+    dustMax = COUNTS[tier];
+    dustCount = dustMax;
+    var i, d = new Float32Array(dustMax * 2);
+    for (i = 0; i < dustMax * 2; i++) d[i] = Math.random();
+    B.seed = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, B.seed); gl.bufferData(gl.ARRAY_BUFFER, d, gl.STATIC_DRAW);
+    B.a = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, B.a); gl.bufferData(gl.ARRAY_BUFFER, dustMax * 16, gl.DYNAMIC_DRAW);
+    B.b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, B.b); gl.bufferData(gl.ARRAY_BUFFER, dustMax * 16, gl.DYNAMIC_DRAW);
 
     starCount = tier === 0 ? 260 : tier === 1 ? 460 : 800;
     var sv = new Float32Array(starCount * 4 * 5), si = new Uint16Array(starCount * 6);
@@ -496,6 +469,7 @@
       gl.bindBuffer(gl.ARRAY_BUFFER, B.gNor); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, B.gIdx);
       gl.uniform2f(u.u.uFit, fitX, fitY);
+      gl.uniform3fv(u.u.uG0, pal.g0); gl.uniform3fv(u.u.uG1, pal.g1); gl.uniform3fv(u.u.uG2, pal.g2);
       for (i = 0; i < glyphs.length; i++) {
         var g = glyphs[i];
         if (g.s < .004) continue;
@@ -506,18 +480,22 @@
       gl.disableVertexAttribArray(1); gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND);
     }
 
-    /* the sculpture */
-    if (S.alpha * S.dim > .004) {
-      u = P.dust; gl.useProgram(u.p); gl.blendFunc(gl.ONE, gl.ONE);
-      gl.bindBuffer(gl.ARRAY_BUFFER, B.dust); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
-      gl.uniform1f(u.u.uT, time); gl.uniform1f(u.u.uA, S.a); gl.uniform1f(u.u.uB, S.b); gl.uniform1f(u.u.uMix, S.mix);
+    /* the figure */
+    if (S.alpha * S.dim > .004 && figB) {
+      u = P.dust; gl.useProgram(u.p); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.bindBuffer(gl.ARRAY_BUFFER, B.a); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, B.b); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, B.seed); gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1f(u.u.uT, time); gl.uniform1f(u.u.uMix, S.mix);
       gl.uniform1f(u.u.uBurst, S.burst); gl.uniform1f(u.u.uYaw, S.yaw + yawAcc); gl.uniform1f(u.u.uPitch, S.pitch);
-      gl.uniform1f(u.u.uScale, S.scale); gl.uniform1f(u.u.uAlpha, S.alpha * S.dim * (tier === 0 ? 1.2 : tier === 1 ? 1.1 : 1));
-      gl.uniform1f(u.u.uSize, S.size * (W < 820 ? 1.55 : 1.8)); gl.uniform1f(u.u.uDpr, dpr); gl.uniform1f(u.u.uHue, S.hue + time * .012);
-      gl.uniform2f(u.u.uFit, fitX, fitY); gl.uniform2f(u.u.uOff, S.x + tilt.x * .05, S.y - tilt.y * .04);
+      gl.uniform1f(u.u.uScale, S.scale); gl.uniform1f(u.u.uAlpha, S.alpha * S.dim * (tier === 0 ? 1.3 : tier === 1 ? 1.1 : 1));
+      gl.uniform1f(u.u.uSize, S.size * (tier === 0 ? 2 : W < 820 ? 1.5 : 1.75)); gl.uniform1f(u.u.uDpr, dpr);
+      gl.uniform2f(u.u.uFit, fitX, fitY); gl.uniform2f(u.u.uOff, S.x + tilt.x * .03, S.y - tilt.y * .025);
       gl.uniform2f(u.u.uTouch, touch.x, touch.y); gl.uniform1f(u.u.uTouchF, touch.f);
       gl.uniform1f(u.u.uRip, rip.t); gl.uniform2f(u.u.uRipC, rip.x, rip.y);
+      gl.uniform3fv(u.u.uC0, pal.c0);
       gl.drawArrays(gl.POINTS, 0, dustCount);
+      gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2);
     }
 
     /* the MATHS window */
@@ -538,13 +516,18 @@
   var yawAcc = 0;
   function frame(now) {
     if (!running) return;
+    var busy = now - lastInput < 1600 || C.s.mix < 1 || C.s.warp > .001 || C.s.burst > .001 || touch.tf > 0 || Math.abs(C.spinV) > .01 || C.spin;
+    if (C.dimmed) { if (now < nextFrame) return; nextFrame = now + 120; }
+    else if (!busy && tier < 2) { if (now < nextFrame) return; nextFrame = now + 32; }
     var dt = Math.min(.05, (now - last) / 1000 || .016);
     last = now;
     var t0 = performance.now();
     if (!C.calm) {
       time += dt * C.s.drift;
-      yawAcc += (C.s.spin + C.spinV + Math.min(1.6, Math.abs(C.scrollV) * .0026)) * dt;
+      yawAcc += (C.s.spin + C.spinV) * dt;
       C.spinV *= Math.pow(.12, dt);
+      /* flat drawings sway around facing you, so they always stay readable */
+      if (!C.s.spin) { yawAcc += (Math.sin(time * .5) * .34 - yawAcc) * Math.min(1, dt * 1.6); }
     }
     touch.f += (touch.tf - touch.f) * Math.min(1, dt * 9);
     tilt.x += (tilt.tx - tilt.x) * Math.min(1, dt * 3); tilt.y += (tilt.ty - tilt.y) * Math.min(1, dt * 3);
@@ -557,8 +540,8 @@
     if (frames >= 45) {
       var avg = spent / frames;
       frames = 0; spent = 0;
-      if (avg > .0235 && tier > 0 && !document.hidden) {
-        if (++slowRuns >= 2) { slowRuns = 0; tier--; dustCount = COUNTS[tier]; resize(true); }
+      if (avg > .0235 && tier > 0 && !document.hidden && busy) {
+        if (++slowRuns >= 2) { slowRuns = 0; tier--; dustCount = Math.min(dustMax, COUNTS[tier]); resize(true); }
       } else slowRuns = 0;
     }
   }
@@ -568,6 +551,7 @@
   var downX = 0, downY = 0, downT = 0, lastX = 0, lastY = 0, dragging = false, zoneOK = false;
   function blocked(el) { return !!(el.closest && el.closest('a,button,input,select,textarea,label,summary,dialog,[data-no3d]')); }
   function onDown(e) {
+    lastInput = performance.now();
     if (e.button > 0) return;
     zoneOK = !blocked(e.target);
     if (!zoneOK) return;
@@ -583,6 +567,7 @@
     });
   }
   function onMove(e) {
+    lastInput = performance.now();
     if (!dragging) { if (e.pointerType === 'mouse') { var m = clip(e); touch.x += (m[0] - touch.x) * .25; touch.y += (m[1] - touch.y) * .25; touch.tf = blocked(e.target) ? 0 : .42; } return; }
     var dx = e.clientX - lastX, dy = e.clientY - lastY;
     lastX = e.clientX; lastY = e.clientY;
@@ -648,11 +633,40 @@
   C.tick = function (now) { if (running) frame(now); };
   C.glyphLayout = setLayout;
   C.ripple = function (x, y) { var c = clip({ clientX: x, clientY: y }); rip.x = c[0]; rip.y = c[1]; rip.t = 0; };
-  C.scene = null;
   C.quality = function () { return { tier: tier, dust: dustCount, dpr: dpr }; };
-  C.lite = function (on) { if (!C.ok) return; tier = on ? 0 : pickTier(); dustCount = COUNTS[tier]; resize(true); };
+  C.lite = function (on) { if (!C.ok) return; tier = on ? 0 : pickTier(); dustCount = Math.min(dustMax, COUNTS[tier]); resize(true); };
 
-  var maskWord = 'MATHS', maskFont = '800 150px "Mona Sans", sans-serif';
+  /* ── figures ── */
+  function getFig(name) {
+    var c = figCache[name];
+    if (c) return c;
+    c = window.KTFigs.build(name, dustMax);
+    figCache[name] = c; figOrder.push(name);
+    /* keep only a few figures in memory; the rest are simply rebuilt if needed */
+    while (figOrder.length > 4) { var old = figOrder.shift(); if (old !== figName) delete figCache[old]; else figOrder.push(old); if (figOrder.length <= 4) break; }
+    return c;
+  }
+  C.figure = function (name, dur) {
+    if (!C.ok || name === figName) return;
+    if (C.s.mix < 1 && figB) { figQueue = [name, dur]; return; }
+    var data = getFig(name);
+    figName = name;
+    var t = B.a; B.a = B.b; B.b = t;              /* what was the target is now the start */
+    gl.bindBuffer(gl.ARRAY_BUFFER, B.b); gl.bufferSubData(gl.ARRAY_BUFFER, 0, data);
+    if (!figB) { gl.bindBuffer(gl.ARRAY_BUFFER, B.a); gl.bufferSubData(gl.ARRAY_BUFFER, 0, data); }
+    figB = data;
+    C.s.spin = window.KTFigs.solid(name) ? .28 : 0;
+    if (C.calm || !window.gsap || dur === 0) { C.s.mix = 1; return; }
+    C.s.mix = 0;
+    window.gsap.to(C.s, { mix: 1, duration: dur || 1.15, ease: 'none', overwrite: 'auto', onComplete: function () {
+      if (figQueue) { var q = figQueue; figQueue = null; C.figure(q[0], .8); }
+    } });
+  };
+  C.prepare = function (name) { if (C.ok && name) getFig(name); };
+  C.theme = function (p) { pal = p; };
+  C.wake = function () { lastInput = performance.now(); };
+
+  var maskWord = 'MATHS', maskFont = '800 210px "Mona Sans", sans-serif';
   function makeMask() {
     if (!gl) return;
     var t = maskTexture(maskWord, maskFont);
