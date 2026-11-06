@@ -392,6 +392,7 @@ a.chip:hover{background:rgb(255 255 255/.08)}
 .play span svg{width:28px;height:28px;margin-left:3px}
 .toast{position:fixed;left:50%;bottom:calc(var(--dock) + var(--safe-b) + 18px);z-index:90;max-width:min(90vw,420px);padding:11px 18px;border-radius:999px;background:var(--ink);color:var(--on-sun);font-size:.95rem;font-weight:600;line-height:1.3;text-align:center;transform:translate(-50%,12px);opacity:0;pointer-events:none;transition:opacity .2s,transform .3s var(--ease)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.top{top:calc(70px + var(--safe-t));bottom:auto}
 @media(min-width:1040px){.toast{bottom:28px}}
 
 /* Lab */

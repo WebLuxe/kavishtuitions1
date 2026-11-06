@@ -42,9 +42,9 @@
     } catch (e) {}
   }
   var toastEl, toastT;
-  function toast(m) {
+  function toast(m, top) {
     if (!toastEl) { toastEl = doc.createElement('div'); toastEl.className = 'toast'; toastEl.setAttribute('role', 'status'); doc.body.appendChild(toastEl); }
-    toastEl.textContent = m; toastEl.classList.add('on');
+    toastEl.textContent = m; toastEl.classList.toggle('top', !!top); toastEl.classList.add('on');
     clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('on'); }, 2600);
   }
 
@@ -1124,7 +1124,7 @@
 
   function hint() {
     if (calm || !C.ok || store.get('kt_hint') || S.glyphs < .5) return;
-    setTimeout(function () { if (store.get('kt_hint')) return; store.set('kt_hint', '1'); toast(fine ? 'Try it: drag the maths symbols' : 'Try it: flick the maths symbols'); }, 2600);
+    setTimeout(function () { if (store.get('kt_hint')) return; store.set('kt_hint', '1'); toast(fine ? 'Try it: drag the maths symbols' : 'Try it: flick the maths symbols', true); }, 2600);
   }
 
   /* ── go ── */
