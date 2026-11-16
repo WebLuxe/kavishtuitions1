@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://webluxe.github.io/kavishtuitions1/sitemap.xml

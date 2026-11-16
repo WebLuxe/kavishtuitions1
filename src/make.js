@@ -5,13 +5,6 @@ const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const SITE = 'https://webluxe.github.io/kavishtuitions1/';
 const WA = 'https://wa.me/23059238436';
-/* What search engines are told about the business. Only facts that are on the site. */
-const SEARCH = {
-  '@context': 'https://schema.org', '@type': 'EducationalOrganization', name: 'Kavish Maths', url: SITE, image: SITE + 'images/og.jpg',
-  description: 'Maths and Add Maths tuition with Kavish Sunassee, from Grade 9 NCE to HSC / A-Level.', telephone: '+23059238436',
-  address: { '@type': 'PostalAddress', addressLocality: 'Moka', addressCountry: 'MU' },
-  founder: { '@type': 'Person', name: 'Kavish Sunassee', jobTitle: 'Maths and Add Maths tutor' }, areaServed: 'Mauritius'
-};
 
 const ICONS = {
   home: '<path d="M4 11l8-6.5L20 11v8.5a.8.8 0 0 1-.8.8H15v-6H9v6H4.8a.8.8 0 0 1-.8-.8z"/>',
@@ -45,10 +38,7 @@ const ICONS = {
   tag: '<path d="M4 4.500h8l8 8-7.500 7.500-8.500-8z"/><circle cx="8.500" cy="9" r="1.300"/>',
   key: '<circle cx="8" cy="15.500" r="4"/><path d="M11 12.500L20 4M16 8l3 3"/>',
   back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
-  card: '<rect x="3.500" y="5.500" width="17" height="13" rx="2"/><path d="M3.500 10h17"/>',
-  down: '<path d="M12 4v11M7 10.500l5 5 5-5"/><path d="M5 19.500h14"/>',
-  minus: '<path d="M5 12h14"/>',
-  search: '<circle cx="10.500" cy="10.500" r="6"/><path d="M15 15l5 5"/>'
+  card: '<rect x="3.500" y="5.500" width="17" height="13" rx="2"/><path d="M3.500 10h17"/>'
 };
 const GRAD = '<defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8b6cff"/><stop offset=".55" stop-color="#22d3ee"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs>';
 const sprite = '<svg width="0" height="0" style="position:absolute" aria-hidden="true">' + GRAD +
@@ -56,31 +46,33 @@ const sprite = '<svg width="0" height="0" style="position:absolute" aria-hidden=
 const ic = (n, cls = 'ic') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="url(#lg)"/><path d="M7 9.500q9 26 18 0" fill="none" stroke="#0b0720" stroke-width="3.200" stroke-linecap="round"/></svg>';
 
-const NAV = [['index.html', 'Home', 'home'], ['courses.html', 'Courses', 'book'], ['pricing.html', 'Pricing', 'tag'], ['lab.html', 'Maths Lab', 'lab'], ['contact.html', 'Contact', 'chat']];
-/* A page that used to exist. Old links still land in the right place. */
-const MOVED = { 'tuition.html': 'how' };
+const NAV = [['index.html', 'Home', 'home'], ['tuition.html', 'Tuition', 'cap'], ['courses.html', 'Courses', 'book'], ['lab.html', 'Maths Lab', 'lab'], ['pricing.html', 'Pricing', 'tag'], ['contact.html', 'Contact', 'chat']];
 
 
-/* All the colours of the site. */
+/* All the colours of the site. Change them here and the 3D follows. */
 const T = (o) => Object.entries(o).map(([k, v]) => `--${k}:${v}`).join(';');
 const TOKENS = {
-  night: '#070914', 'night-2': '#0c0828', panel: '#0f1226', 'panel-2': '#171a36', card: 'rgb(255 255 255/.05)', well: 'rgb(7 9 20/.6)', glass: 'rgb(15 18 38/.82)', dockbg: 'rgb(15 18 38/.96)',
-  line: 'rgb(255 255 255/.12)', 'line-2': 'rgb(255 255 255/.22)', ink: '#e8eaf6', mute: '#9aa3c7', sun: '#22d3ee', 'on-sun': '#04131a', tint: 'rgb(34 211 238/.1)',
-  violet: '#7c5cff', cyan: '#22d3ee', pink: '#f472b6', good: '#5eead4', bad: '#fb7185',
-  cardx: 'radial-gradient(120% 90% at 50% 0%,#2a1f6e,#141033 62%)', flash: 'radial-gradient(circle at 50% 50%,#f3e8ff,#a78bfa 26%,rgb(124 92 255/.34) 50%,transparent 74%)',
+  night: '#0b0720', 'night-2': '#120b30', panel: '#17103a', 'panel-2': '#1e1548', card: 'rgb(30 21 72/.72)', well: 'rgb(11 7 32/.72)', glass: 'rgb(18 11 48/.82)', dockbg: 'rgb(20 13 52/.95)',
+  line: 'rgb(226 220 255/.14)', 'line-2': 'rgb(226 220 255/.26)', ink: '#f5f2ff', mute: '#b8b2da', sun: '#ffcf7a', 'on-sun': '#1b1038', tint: 'rgb(255 207 122/.12)',
+  violet: '#a48dff', cyan: '#67e8f9', pink: '#f9a8d4', good: '#5eead4', 'good-line': 'rgb(94 234 212/.4)', 'good-bg': 'rgb(12 34 44/.92)', bad: '#fb7185',
+  ring: 'conic-gradient(from 210deg,#a48dff,#67e8f9,#f9a8d4,#ffcf7a,#a48dff)',
+  sky1: 'radial-gradient(ellipse 90% 70% at 62% 30%,#3a1a8a 0%,#1d0f52 40%,transparent 76%)', sky2: 'radial-gradient(ellipse 80% 70% at 30% 62%,#1e3a8a 0%,#10174f 42%,transparent 76%)', sky3: 'radial-gradient(ellipse 80% 70% at 70% 66%,#6d1a7a 0%,#330f4f 42%,transparent 76%)',
+  cardx: 'radial-gradient(120% 90% at 50% 0%,#2c2070,#1e1548 62%)', flash: 'radial-gradient(circle at 50% 50%,#f3e8ff,#a78bfa 26%,rgb(124 92 255/.34) 50%,transparent 74%)',
+  shim: 'linear-gradient(90deg,#fff 0%,#c4b5fd 22%,#8b6cff 42%,#22d3ee 62%,#f472b6 82%,#fff 100%)',
+  p0: '#6f5ccf', g0: '#0f0833', g1: '#5c33eb', g2: '#33d1f2',
   ldbg: 'radial-gradient(ellipse 85% 75% at 50% 42%,#3a1a8a 0%,#1d0f52 38%,#0c0828 72%,#070914 100%)',
   logo: 'linear-gradient(90deg,#fff 0%,#c4b5fd 20%,#7c5cff 40%,#22d3ee 60%,#f472b6 80%,#fff 100%)', bar: 'linear-gradient(90deg,#7c5cff,#22d3ee,#f472b6)', ldink: '#c4b5fd'
 };
 
 const CRITICAL = `
-@font-face{font-family:"Space Grotesk";src:url(fonts/space-grotesk-700.woff2) format("woff2");font-weight:600 900;font-display:swap}
-:root{--pad:clamp(18px,5vw,72px);--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--dockh:76px;--ease:cubic-bezier(.2,.7,.2,1);--spring:cubic-bezier(.3,1.5,.5,1);--text:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--head:"Space Grotesk",Inter,system-ui,sans-serif;--math:"Cambria Math","STIX Two Math","Noto Sans Math","Times New Roman",serif}
+@font-face{font-family:"Mona Sans";src:url(fonts/mona.woff2) format("woff2");font-weight:200 900;font-stretch:75% 125%;font-display:swap}
+:root{--pad:clamp(18px,5vw,72px);--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--dockh:76px;--ease:cubic-bezier(.2,.7,.2,1);--spring:cubic-bezier(.3,1.5,.5,1);--text:"Mona Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--serif:"Instrument Serif",Georgia,"Times New Roman",serif;--math:"Cambria Math","STIX Two Math","Noto Sans Math","Times New Roman",serif}
 @media(min-width:1040px){:root{--dockh:0px}}
 @media(max-height:500px) and (orientation:landscape){:root{--dockh:0px}}
 :root{${T(TOKENS)}}
 html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--night)}
 .no-js,.no-js body{height:auto;overflow:auto}
-#deck{position:fixed;inset:0;overflow:hidden auto}
+#deck{position:fixed;inset:0;overflow:hidden auto;overscroll-behavior:none;scroll-snap-type:y mandatory}
 .loading #deck{overflow:hidden}
 #ld{position:fixed;inset:0;z-index:100;overflow:hidden;background:var(--ldbg);color:var(--ldink);font-family:var(--text);-webkit-user-select:none;user-select:none;cursor:pointer;touch-action:none}
 .no-js #ld{display:none}
@@ -97,7 +89,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 @keyframes ld-od{to{stroke-dashoffset:-160}}
 .ld-f{position:absolute;inset:0;opacity:0;pointer-events:none;background:var(--flash)}
 .ld-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.3rem;perspective:900px;padding:0 12px}
-.ld-l{font-family:var(--head);font-size:clamp(2rem,8.4vw,7rem);font-weight:700;letter-spacing:-.03em;line-height:1.1;white-space:nowrap;opacity:0}
+.ld-l{font-size:clamp(2rem,8.4vw,7rem);font-weight:800;font-stretch:112%;letter-spacing:-.035em;line-height:1.1;white-space:nowrap;opacity:0}
 .ld-l.go{opacity:1}
 .ld-l .l{display:inline-block;animation:ld-in 1.25s cubic-bezier(.3,1.5,.5,1) both;animation-delay:calc(var(--i)*.055s + .1s)}
 .ld-l b{display:inline-block;font-weight:800;background:var(--logo);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:ld-sh 4s linear infinite;animation-delay:calc(var(--i)*-.28s)}
@@ -113,7 +105,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 #ld.ld-out{opacity:0;transition:opacity .5s ease;pointer-events:none}
 @media(prefers-reduced-motion:reduce){.ld-a i,.ld-o ellipse,.ld-l b{animation:none}.ld-l .l{animation-duration:.01s;animation-delay:0s}.ld-o{display:none}}`.replace(/\n/g, '');
 
-const LOADER = `<div id="ld" role="status" aria-label="Loading Kavish Maths">
+const LOADER = `<div id="ld" role="status" aria-label="Loading KavishTuitions">
 <div class="ld-p" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 <div class="ld-a" aria-hidden="true"><i></i><i></i><i></i></div>
 <canvas id="ldc" aria-hidden="true"></canvas>
@@ -127,18 +119,17 @@ const LOADER = `<div id="ld" role="status" aria-label="Loading Kavish Maths">
    it counts actual bytes arriving, so it's honest on a slow connection. */
 const boot = (siteBytes) => `(function(){
 var d=document,H=d.documentElement,W=window;H.classList.remove('no-js');H.classList.add('js');
-var ld=d.getElementById('ld'),calm=matchMedia('(prefers-reduced-motion: reduce)').matches,seen=0;try{seen=localStorage.getItem('kt_intro');localStorage.setItem('kt_intro','1')}catch(e){}
-var full=H.dataset.intro==='full'&&!calm&&!seen;
+var ld=d.getElementById('ld'),calm=matchMedia('(prefers-reduced-motion: reduce)').matches,full=H.dataset.intro==='full'&&!calm;
 var B=W.KTB={wp:{s:0,on:1},skip:false,full:full,calm:calm};
 var logo=d.getElementById('ldLogo');
-logo.innerHTML='KavishMaths'.split('').map(function(c,i){return '<span class="l" style="--i:'+i+';--r:'+((i*37)%80-40)+'deg"><b>'+c+'</b></span>'}).join('');
+logo.innerHTML='KavishTuitions'.split('').map(function(c,i){return '<span class="l" style="--i:'+i+';--r:'+((i*37)%80-40)+'deg"><b>'+c+'</b></span>'}).join('');
 var cv=d.getElementById('ldc'),x=cv.getContext('2d'),dp=Math.min(W.devicePixelRatio||1,2),w,h;
 function sz(){w=innerWidth;h=innerHeight;cv.width=w*dp;cv.height=h*dp;x.setTransform(dp,0,0,dp,0,0)}sz();addEventListener('resize',sz);
 var wp=B.wp,R=Math.random,st=[],sm=[],sy='π √ θ x² ∑ ∫ ± ÷ × % ∞ Δ sin cos'.split(' '),i,n=w<768?90:190;
 for(i=0;i<n;i++)st.push({a:R()*6.283,r:R(),h:R()});
 for(i=0;i<(w<768?20:32);i++)sm.push({x:R(),y:R(),s:14+R()*26,v:.00025+R()*.0006,t:sy[R()*sy.length|0],a:.12+R()*.24,r:R()*6,h:R()});
 function dr(){if(!wp.on)return;x.clearRect(0,0,w,h);var s=wp.s,k,o;
-if(s<.98)for(k=0;k<sm.length;k++){o=sm[k];o.y-=o.v;o.r+=.004;if(o.y<-.06){o.y=1.06;o.x=R()}x.save();x.globalAlpha=o.a*(1-s);x.translate(o.x*w+Math.sin(o.r*1.5)*20,o.y*h);x.rotate(Math.sin(o.r)*.4);x.fillStyle=o.h>.5?'#c4b5fd':'#67e8f9';x.font=o.s+"px 'Space Grotesk',system-ui,sans-serif";x.fillText(o.t,0,0);x.restore()}
+if(s<.98)for(k=0;k<sm.length;k++){o=sm[k];o.y-=o.v;o.r+=.004;if(o.y<-.06){o.y=1.06;o.x=R()}x.save();x.globalAlpha=o.a*(1-s);x.translate(o.x*w+Math.sin(o.r*1.5)*20,o.y*h);x.rotate(Math.sin(o.r)*.4);x.fillStyle=o.h>.5?'#c4b5fd':'#67e8f9';x.font=o.s+"px 'Mona Sans',system-ui,sans-serif";x.fillText(o.t,0,0);x.restore()}
 var x0=w/2,y0=h/2,m=Math.hypot(x0,y0);x.lineCap='round';x.globalAlpha=.25+.75*s;
 for(k=0;k<st.length;k++){o=st[k];o.r+=.0015+s*.05;if(o.r>1.05){o.r=R()*.15;o.a=R()*6.283}
 var ro=o.r*m,t=Math.max(0,ro-(8+s*340)*o.r),c=Math.cos(o.a),q=Math.sin(o.a);
@@ -155,7 +146,7 @@ if(shown<1||waiting.length)requestAnimationFrame(tick);else B.done=true}
 B.whenDone=function(f){if(B.done)f();else waiting.push(f)};
 var l=d.getElementById('kcss');function cdone(){l.media='all';up('css',1)}if(l.sheet)cdone();else{l.onload=cdone;l.onerror=function(){up('css',1)}}
 function fg(){logo.classList.add('go');up('font',1)}
-if(d.fonts&&d.fonts.load){var ft=setTimeout(fg,2200);d.fonts.load('700 40px "Space Grotesk"').then(function(){clearTimeout(ft);fg()},fg)}else fg();
+if(d.fonts&&d.fonts.load){var ft=setTimeout(fg,2200);d.fonts.load('800 40px "Mona Sans"').then(function(){clearTimeout(ft);fg()},fg)}else fg();
 function tag(u,k,done){var s=d.createElement('script');s.src=u;s.onload=function(){up(k,1);done&&done()};s.onerror=function(){B.failed=true;up(k,1);done&&done()};d.head.appendChild(s)}
 function stream(u,size,k,done){if(!W.fetch||!W.ReadableStream||location.protocol==='file:')return tag(u,k,done);
 fetch(u).then(function(r){if(!r.ok||!r.body)throw 0;var rd=r.body.getReader(),c=[],got=0;return(function pump(){return rd.read().then(function(p){if(p.done)return new Blob(c,{type:'text/javascript'});c.push(p.value);got+=p.value.length;up(k,Math.min(.98,got/size));return pump()})})()}).then(function(b){var s=d.createElement('script'),u2=URL.createObjectURL(b);s.src=u2;s.onload=function(){URL.revokeObjectURL(u2);up(k,1);done&&done()};s.onerror=function(){B.failed=true;up(k,1);done&&done()};d.head.appendChild(s)}).catch(function(){tag(u,k,done)})}
@@ -168,29 +159,31 @@ setTimeout(function(){if(!W.KTAPP)B.kill()},15000);
 
 function html(p, siteBytes) {
   const cur = h => (h === p.file ? ' aria-current="page"' : '');
-  const nav = NAV.map(([h, n]) => `<a href="${h}"${cur(h)}>${n}</a>`).join('');
+  const nav = NAV.slice(0, 5).map(([h, n]) => `<a href="${h}"${cur(h)}>${n}</a>`).join('');
   const dockItem = (h, label, icon) => `<a href="${h}"${cur(h)}>${ic(icon)}<span>${label}</span></a>`;
   const links = NAV.map(([h, n]) => `<li><a href="${h}">${n}</a></li>`).join('');
   const body = fs.readFileSync(path.join(__dirname, 'sections', p.src), 'utf8').replace(/\r\n/g, '\n').replace(/\{\{i:([a-z]+)\}\}/g, (_, n) => ic(n)).replace(/\{\{wa\}\}/g, WA);
   const url = SITE + (p.file === 'index.html' ? '' : p.file);
-  const foot = `<footer class="s foot" id="end"><div class="wrap">
-  <div class="foot__grid">
-    <div><a class="logo" href="index.html">Kavish<b>Maths</b></a><p class="foot__fine">Maths &amp; Add Maths tuition with Kavish Sunassee for Mauritian secondary students.</p></div>
-    <nav aria-label="Pages"><h2>Pages</h2><ul>${links}</ul></nav>
-    <div><h2>Talk to Kavish</h2><a href="${WA}" target="_blank" rel="noopener">WhatsApp +230 5923 8436</a><a href="tel:+23059238436">Call +230 5923 8436</a></div>
+  const next = p.next ? `<a class="btn btn--sun" href="${p.next[0]}" data-a>${p.next[1]}${ic('arrow')}</a>` : '';
+  const foot = `<section class="s s--full s--foot" id="end" data-fig="none" data-dim="0" data-sky="0" aria-label="Site links"><div class="s__in" style="flex-direction:column;align-items:stretch">
+  <div class="txt foot"><div class="foot__grid">
+    <div data-a><a class="logo" href="index.html">${LOGO}<span>KavishTuitions</span></a><p class="foot__fine opt">Maths &amp; Add Maths tuition with Kavish Sunassee, proudly based in Moka, Mauritius.</p>${next ? `<p class="foot__cta">${next}</p>` : ''}</div>
+    <nav aria-label="Pages" data-a><h2>Pages</h2><ul>${links}</ul></nav>
+    <div data-a><h2>Talk to Kavish</h2><a href="${WA}" target="_blank" rel="noopener">WhatsApp +230 5923 8436</a><br><a href="tel:+23059238436">Call +230 5923 8436</a></div>
   </div>
-  <p class="foot__end">Independent tuition resource, not affiliated with any exam board or ministry. Built by Sungkur Doorgesh.</p>
-</div><div class="fw" aria-hidden="true">KAVISH MATHS</div></footer>`;
+  <p class="foot__fine" data-a>Independent tuition resource, not affiliated with any exam board or ministry. Built by Sungkur Doorgesh.</p></div>
+  <div class="fw" aria-hidden="true">KAVISH</div>
+</div></section>`;
   return `<!DOCTYPE html>
 <html lang="en" class="no-js loading" data-intro="${p.file === 'index.html' ? 'full' : 'short'}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0c0828">
+<meta name="theme-color" content="#0b0720">
 <title>${p.title}</title>
 <meta name="description" content="${p.desc}">
-<link rel="canonical" href="${url}">${p.file === 'index.html' ? '\n<script type="application/ld+json">' + JSON.stringify(SEARCH) + '</script>' : ''}
-<meta property="og:type" content="website"><meta property="og:site_name" content="Kavish Maths">
+<link rel="canonical" href="${url}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="KavishTuitions">
 <meta property="og:title" content="${p.title}"><meta property="og:description" content="${p.desc}">
 <meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}images/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
@@ -199,7 +192,7 @@ function html(p, siteBytes) {
 <link rel="manifest" href="site.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="preload" href="fonts/space-grotesk-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/mona.woff2" as="font" type="font/woff2" crossorigin>
 <style>${CRITICAL}</style>
 <link rel="stylesheet" id="kcss" href="css/site.css" media="print">
 <noscript><link rel="stylesheet" href="css/site.css"></noscript>
@@ -208,87 +201,40 @@ function html(p, siteBytes) {
 ${sprite}
 ${LOADER}
 <script>${boot(siteBytes)}</script>
-<div class="bg" aria-hidden="true"></div>
+<div class="sky" aria-hidden="true"><i></i><i></i><i></i></div>
+<canvas id="cosmos" aria-hidden="true"></canvas>
+<div class="kcur" aria-hidden="true"></div>
 <header class="top"><div class="top__in">
-  <a class="logo" href="index.html" aria-label="Kavish Maths home">Kavish<b>Maths</b></a>
+  <a class="logo" href="index.html" aria-label="KavishTuitions home">${LOGO}<span>KavishTuitions</span></a>
   <nav class="nav" aria-label="Main">${nav}</nav>
-  <div class="top__end"><a class="streak" href="lab.html" id="topStreak" hidden aria-label="Your streak">${ic('flame', '')}<span></span></a><button type="button" class="btn btn--sun btn--sm" data-unlock>Unlock</button></div>
+  <div class="top__end"><a class="streak" href="lab.html" id="topStreak" hidden aria-label="Your streak">${ic('flame', '')}<span></span></a><button type="button" class="btn btn--sun btn--sm top__join" data-join>Join</button></div>
 </div></header>
 <main id="deck">
 ${body}
 ${foot}
 </main>
+<div class="pips" aria-hidden="true"></div>
 <nav class="dock" aria-label="Quick menu">
   ${dockItem('index.html', 'Home', 'home')}
-  ${dockItem('courses.html', 'Courses', 'book')}
+  ${dockItem('tuition.html', 'Tuition', 'cap')}
   <button type="button" class="dock__main" data-join><span class="orb">${ic('spark')}</span><b data-main-label>Join</b></button>
   ${dockItem('lab.html', 'Lab', 'lab')}
   <button type="button" data-menu>${ic('menu')}<span>Menu</span></button>
 </nav>
-<noscript><p style="position:fixed;left:0;right:0;bottom:0;margin:0;padding:12px;background:#0f1226;color:#fff;text-align:center;z-index:50">The lessons and games need JavaScript, but you can still <a style="color:#22d3ee" href="${WA}">message Kavish on WhatsApp</a>.</p></noscript>
+<noscript><p style="position:fixed;left:0;right:0;bottom:0;margin:0;padding:12px;background:#17103a;color:#fff;text-align:center;z-index:50">The lessons and games need JavaScript, but you can still <a style="color:#ffcf7a" href="${WA}">message Kavish on WhatsApp</a>.</p></noscript>
 </body>
 </html>
 `;
 }
 
 const pages = [
-  { name: 'home', file: 'index.html', src: 'home.html', title: 'Kavish Maths: Maths & Add Maths tuition with Kavish Sunassee', desc: 'Maths and Add Maths tuition with Kavish Sunassee in Moka, Mauritius. Video lessons, notes and worked solutions from Grade 9 NCE to HSC / A-Level.' },
-  { name: 'courses', file: 'courses.html', src: 'courses.html', title: 'Chapters and notes: NCE, O Level and A Level Maths | Kavish Maths', desc: 'Every chapter of Grade 9 NCE, Cambridge O Level Mathematics 4024, Additional Mathematics 4037 and A Level 9709, with notes you can read on the site.' },
-  { name: 'pricing', file: 'pricing.html', src: 'pricing.html', title: 'Pricing: from Rs 500 a month | Kavish Maths', desc: 'Monthly, term and full-year access to Maths and Add Maths lessons, paid via MCB Juice. No card needed.' },
-  { name: 'lab', file: 'lab.html', src: 'lab.html', title: 'Maths Lab: Swipe Maths and the quadratic explorer | Kavish Maths', desc: 'Swipe through true or false maths, keep your streak alive, and drag a live parabola with your finger.' },
-  { name: 'contact', file: 'contact.html', src: 'contact.html', title: 'Contact Kavish | Kavish Maths', desc: 'Message Kavish Sunassee on WhatsApp or by phone about Maths and Add Maths tuition in Moka, Mauritius.' }
+  { name: 'home', file: 'index.html', src: 'home.html', next: ['tuition.html', 'See the tuition'], title: 'Kavish Sunassee: Maths & Add Maths tutor in Moka, Mauritius', desc: "Hi, I'm Kavish, a Maths and Add Maths tutor from Moka, Mauritius. Meet me, then explore video lessons, notes and worked solutions from NCE to HSC / A-Level." },
+  { name: 'tuition', file: 'tuition.html', src: 'tuition.html', next: ['courses.html', 'See the courses'], title: 'Tuition: Maths & Add Maths, NCE to HSC | KavishTuitions', desc: 'Video lessons, downloadable notes and fully worked solutions for Mauritian secondary students, from Grade 9 NCE to HSC / A-Level.' },
+  { name: 'courses', file: 'courses.html', src: 'courses.html', next: ['lab.html', 'Try the Maths Lab'], title: 'Courses: your lesson path | KavishTuitions', desc: 'Follow your lesson path by grade. Notes, videos and worked solutions for NCE, SC / IGCSE and HSC / A-Level, with free preview lessons.' },
+  { name: 'lab', file: 'lab.html', src: 'lab.html', next: ['pricing.html', 'See pricing'], title: 'Maths Lab: Swipe Maths and the parabola explorer | KavishTuitions', desc: 'Swipe through true or false maths, keep your streak alive, and drag a live parabola with your finger.' },
+  { name: 'pricing', file: 'pricing.html', src: 'pricing.html', next: ['contact.html', 'Talk to Kavish'], title: 'Pricing: from Rs 500 a month | KavishTuitions', desc: 'Monthly, term and full-year access to Maths and Add Maths lessons, paid via MCB Juice. No card needed.' },
+  { name: 'contact', file: 'contact.html', src: 'contact.html', title: 'Contact Kavish | KavishTuitions', desc: 'Message Kavish Sunassee on WhatsApp or by phone about Maths and Add Maths tuition in Moka, Mauritius.' }
 ];
-
-/* Chapter notes. Real PDFs live in notes/<course>/. Any chapter without one gets a
-   labelled sample in notes/samples/ so the site can be tested end to end. */
-function buildNotes() {
-  const { NOTES_BASE, stages } = require('./syllabus');
-  const { samplePdf } = require('./samplepdf');
-  const NOTES = path.join(ROOT, 'notes'), SAMPLES = path.join(NOTES, 'samples');
-  const slug = t => t.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  fs.rmSync(SAMPLES, { recursive: true, force: true });
-  const report = [], warn = [];
-  const out = stages.map(st => ({
-    id: st.id, label: st.label, exam: st.exam,
-    courses: st.courses.map(c => {
-      const dir = path.join(NOTES, c.id), used = new Set();
-      let num = 0, real = 0;
-      const parts = c.parts.map(([name, chapters]) => ({
-        name,
-        ch: chapters.map(([title, subs, o = {}]) => {
-          num++;
-          const std = String(num).padStart(2, '0') + '-' + slug(title) + '.pdf', files = [];
-          const add = (file, label) => {
-            const p = path.join(dir, file);
-            if (!fs.existsSync(p)) { if (file !== std) warn.push(`notes/${c.id}/${file} is listed in src/syllabus.js but isn't in the folder`); return; }
-            used.add(file);
-            if (!fs.statSync(p).size) { warn.push(`notes/${c.id}/${file} is empty (0 bytes), so it's skipped`); return; }
-            files.push({ u: NOTES_BASE + c.id + '/' + encodeURIComponent(file), t: label || '' });
-          };
-          add(std);
-          (o.files || []).forEach(x => Array.isArray(x) ? add(x[0], x[1]) : add(x));
-          if (files.length) real++;
-          else {
-            fs.mkdirSync(path.join(SAMPLES, c.id), { recursive: true });
-            fs.writeFileSync(path.join(SAMPLES, c.id, std), samplePdf({ num, title, subtopics: subs, course: c.name, board: c.board, code: c.code }));
-            files.push({ u: NOTES_BASE + 'samples/' + c.id + '/' + std, t: '' });
-          }
-          const ch = { n: num, t: title, s: subs, f: files, k: c.id + '|' + slug(title) };
-          if (files[0].u.indexOf('/samples/') < 0) ch.real = files.length;
-          if (o.free) ch.free = 1;
-          if (o.yt) ch.yt = o.yt;
-          return ch;
-        })
-      }));
-      if (fs.existsSync(dir)) fs.readdirSync(dir).filter(f => /\.pdf$/i.test(f) && !used.has(f)).forEach(f => warn.push(`notes/${c.id}/${f} doesn't match any chapter. Rename it like "07-variation.pdf" or set  file: "${f}"  on its chapter in src/syllabus.js`));
-      report.push(`${(st.label + ' ' + c.name).padEnd(24)} ${String(num).padStart(3)} chapters, ${real} with real notes`);
-      return { id: c.id, name: c.name, board: c.board, code: c.code, note: c.note || '', parts };
-    })
-  }));
-  console.log('notes:\n  ' + report.join('\n  '));
-  warn.forEach(w => console.warn('  ! ' + w));
-  return out;
-}
 
 (async () => {
   const esbuild = require(process.env.ESBUILD || 'esbuild');
@@ -296,12 +242,7 @@ function buildNotes() {
   /* one bundle: motion library, figures, 3D engine, app */
   const min = code => esbuild.transform(code, { minify: true, target: 'es2017', legalComments: 'none' }).then(r => r.code);
   const gsapCode = read('vendor/gsap.min.js');
-  const syllabus = buildNotes();
-  /* the PDF reader, served from this site so it also works offline */
-  const pdfjs = path.dirname(require.resolve('pdfjs-dist/package.json'));
-  fs.mkdirSync(path.join(ROOT, 'js/pdf'), { recursive: true });
-  ['pdf.min.js', 'pdf.worker.min.js'].forEach(f => fs.copyFileSync(path.join(pdfjs, 'build', f), path.join(ROOT, 'js/pdf', f)));
-  const own = await min(['window.KTS=' + JSON.stringify(syllabus) + ';', read('js/world.js'), read('js/app.js')].join('\n;\n'));
+  const own = await min([read('js/figs.js'), read('js/cosmos.js'), read('js/app.js')].join('\n;\n'));
   const bundle = gsapCode + '\n;' + own;
   fs.mkdirSync(path.join(ROOT, 'js'), { recursive: true });
   fs.writeFileSync(path.join(ROOT, 'js/site.min.js'), bundle);
@@ -310,14 +251,10 @@ function buildNotes() {
   fs.writeFileSync(path.join(ROOT, 'css/site.css'), css);
   const siteBytes = Buffer.byteLength(bundle);
   for (const p of pages) fs.writeFileSync(path.join(ROOT, p.file), html(p, siteBytes));
-  for (const f in MOVED) fs.writeFileSync(path.join(ROOT, f), '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8"><title>Kavish Maths</title><meta name="robots" content="noindex"><link rel="canonical" href="' + SITE + '"><meta http-equiv="refresh" content="0;url=index.html#' + MOVED[f] + '"><script>location.replace("index.html" + location.search + "#' + MOVED[f] + '")</script></head><body><a href="index.html#' + MOVED[f] + '">Continue to Kavish Maths</a></body></html>\n');
-  /* so search engines can find every page */
-  fs.writeFileSync(path.join(ROOT, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + pages.map(p => '  <url><loc>' + SITE + (p.file === 'index.html' ? '' : p.file) + '</loc></url>').join('\n') + '\n</urlset>\n');
-  fs.writeFileSync(path.join(ROOT, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: ' + SITE + 'sitemap.xml\n');
   fs.writeFileSync(path.join(ROOT, 'favicon.svg'), LOGO.replace('aria-hidden="true">', 'xmlns="http://www.w3.org/2000/svg">' + GRAD));
-  fs.writeFileSync(path.join(ROOT, 'site.webmanifest'), JSON.stringify({ name: 'Kavish Maths', short_name: 'Kavish Maths', start_url: './index.html', display: 'standalone', background_color: '#070914', theme_color: '#0c0828', icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml' }, { src: 'images/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'images/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
+  fs.writeFileSync(path.join(ROOT, 'site.webmanifest'), JSON.stringify({ name: 'KavishTuitions', short_name: 'Kavish', start_url: './index.html', display: 'standalone', background_color: '#0b0720', theme_color: '#0b0720', icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml' }, { src: 'images/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'images/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
   /* the cache engine gets a new name whenever anything changes */
-  const core = ['css/site.css', 'js/site.min.js', 'js/content.js', 'fonts/inter-400.woff2', 'fonts/inter-500.woff2', 'fonts/inter-600.woff2', 'fonts/space-grotesk-500.woff2', 'fonts/space-grotesk-700.woff2', 'favicon.svg', 'index.html'];
+  const core = ['css/site.css', 'js/site.min.js', 'js/content.js', 'fonts/mona.woff2', 'fonts/serif-i.woff2', 'favicon.svg', 'index.html'];
   const hash = require('crypto').createHash('sha1');
   [...core, ...pages.map(p => p.file)].forEach(f => {
     const b = fs.readFileSync(path.join(ROOT, f));
