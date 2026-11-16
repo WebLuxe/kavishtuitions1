@@ -1,4 +1,4 @@
-/* KavishTuitions cache engine.
+/* Kavish Maths cache engine.
    Core files are stored at install, so repeat visits don't wait for the network and the
    site still opens offline. Pages check the network first so updates arrive quickly.
    A new version replaces the whole cache, so nothing old lingers. */

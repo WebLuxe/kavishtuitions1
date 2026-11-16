@@ -1,11 +1,12 @@
 {
   "name": "kavishtuitions",
   "private": true,
-  "description": "KavishTuitions: Maths and Add Maths tuition with Kavish Sunassee, Moka, Mauritius",
+  "description": "Kavish Maths: Maths and Add Maths tuition with Kavish Sunassee, Moka, Mauritius",
   "scripts": {
     "build": "node src/make.js"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "pdfjs-dist": "3.11.174"
   }
 }

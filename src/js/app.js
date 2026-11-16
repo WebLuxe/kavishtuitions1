@@ -1,4 +1,4 @@
-/* KavishTuitions app. One locked deck of full-screen sections.
+/* Kavish Maths app. One locked deck of full-screen sections.
    A mouse notch, swipe or arrow key moves exactly one section. The canvas and dock never
    reload: links swap the deck's content and the world morphs around it.
    Anything that can't run leaves plain, readable HTML behind. */
@@ -76,238 +76,74 @@
     C.theme({ c0: hex('--p0', c), g0: hex('--g0', c), g1: hex('--g1', c), g2: hex('--g2', c) });
   }
 
-  /* ── where the chrome symbols float, in screen fractions ── */
-  var LAY = {
-    home: {
-      wide: [[.14, .58, .3, .14], [.84, .58, .2, .12], [.84, -.58, .3, .14], [.2, -.7, .2, .11], [.56, -.82, .1, .09], [.58, .72, .1, .08], [.05, .05, .1, 0]],
-      tall: [[-.68, .64, .2, .11], [.7, .66, .2, .1], [-.74, .3, .1, .08], [.76, .3, .2, .09], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-    },
-    tuition: {
-      wide: [[.2, .58, .3, .14], [.56, .74, .1, .1], [.86, .56, .3, .13], [.86, -.6, .2, .15], [.34, -.76, .2, .11], [.62, -.82, .1, .09], [.1, -.7, .1, 0]],
-      tall: [[.7, .66, .2, .1], [-.7, .64, .2, .11], [.76, .3, .1, .08], [-.76, .3, .2, .09], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-    }
-  };
+  function fit() {}
+  function place() {}
+  function sky() {}
 
-  var WIDEFIG = { formula: 2.1, numberline: 2.4, spiral: 1.5, grade: 1.3 };
-  /* draw this section's figure inside the empty .vis box the layout left for it */
-  function place(sec, dur) {
-    if (!C.ok || !sec) return;
-    var vis = $('.vis', sec), name = sec.dataset.fig, W = innerWidth, Ht = innerHeight, mn = Math.min(W, Ht);
-    var to = { dim: 1, alpha: 1 }, wide = W > Ht, shown = vis && !sec.classList.contains('novis');
-    if (name === 'none') to.alpha = 0;
-    else {
-      if (shown) {
-        var r = vis.getBoundingClientRect(), o = sec.getBoundingClientRect(), cap = $('.cap', vis), ch = cap ? cap.offsetHeight + 8 : 0;
-        var cy = r.top - o.top + (r.height - ch) / 2, tall = WIDEFIG[name] || 1, side = Math.min(r.width, (r.height - ch) * tall);
-        to.x = (r.left + r.width / 2) / W * 2 - 1; to.y = 1 - cy / Ht * 2; to.scale = clamp(side / mn * .96, .22, 1.6);
-      } else { to.x = 0; to.y = 0; to.scale = wide ? 1.5 : 1.1; }
-      if (sec.dataset.dim) to.dim = +sec.dataset.dim;
-      if (vis && !shown) to.dim = .1;
-      C.figure(name, dur === 0 ? 0 : 1.15);
-      to.pitch = window.KTFigs.solid(name) ? .42 : 0;
-    }
-    gsap.to(S, Object.assign({ duration: dur == null ? .9 : dur, ease: 'power3.inOut', overwrite: 'auto' }, to));
-    var g = sec.dataset.glyphs;
-    if (g) C.glyphLayout(LAY[g]);
-    gsap.to(S, { glyphs: g ? 1 : 0, duration: .7, ease: 'power2.out' });
-  }
-  function sky(n) {
-    var l = $$('.sky i');
-    gsap.to(l[1], { opacity: n === 1 ? 1 : 0, duration: 1, ease: 'none', overwrite: 'auto' });
-    gsap.to(l[2], { opacity: n === 2 ? 1 : 0, duration: 1, ease: 'none', overwrite: 'auto' });
-  }
-
-  /* ── fit: every section fills its screen. Too small grows, too big shrinks, then trims ── */
-  function fit(sec) {
-    var key = innerWidth + 'x' + innerHeight;
-    if (sec.__fit === key) return;
-    sec.__fit = key;
-    sec.classList.add('near');
-    var inner = $('.s__in', sec), t = $('.txt', sec);
-    if (!t || sec.classList.contains('s--tool')) return;
-    sec.classList.remove('trim', 'novis', 'cols'); inner.classList.remove('scroll');
-    sec.style.setProperty('--k', 1);
-    var acc = $$('details', sec), was = acc.map(function (d) { return d.open; });
-    if (acc.length) {
-      var longest = acc.reduce(function (a, b) { return b.textContent.length > a.textContent.length ? b : a; });
-      acc.forEach(function (d) { d.open = d === longest; });
-    }
-    var cs = getComputedStyle(inner), avail = inner.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    var mark = $('.fw', sec); if (mark && mark.offsetHeight) avail -= mark.offsetHeight + 16;
-    var col = cs.flexDirection === 'column', vis = !!$('.vis', sec), limit = avail * (vis && col ? .72 : .94), goal = avail * (vis && col ? .64 : .8);
-    var fs = parseFloat(getComputedStyle(sec).fontSize), minK = 13.5 / fs, h = t.offsetHeight;
-    var k = Math.max(clamp(goal / h, .7, 1.55), minK);
-    sec.style.setProperty('--k', k.toFixed(3));
-    h = t.offsetHeight;
-    if (h > limit) { k = Math.max(k * limit / h, minK); sec.style.setProperty('--k', k.toFixed(3)); h = t.offsetHeight; }
-    if (t.scrollWidth > t.clientWidth + 1) { k = Math.max(k * t.clientWidth / t.scrollWidth * .98, minK); sec.style.setProperty('--k', k.toFixed(3)); h = t.offsetHeight; }
-    if (h > limit) { sec.classList.add('trim'); h = t.offsetHeight; }
-    if (h > limit && vis) { sec.classList.add('novis'); limit = avail; h = t.offsetHeight; }
-    if (h > avail + 1 && innerWidth > innerHeight && !sec.classList.contains('s--foot')) { sec.classList.add('cols'); h = t.offsetHeight; }
-    if (h > avail + 1) inner.classList.add('scroll');
-    acc.forEach(function (d, i) { d.open = was[i]; });
-  }
-
-  /* ── the deck ── */
+  /* ── the page: sections scroll normally. This only tracks which one you are looking at ── */
   var Deck = (function () {
-    var el, secs = [], cur = -1, moving = false, hold = false, io, pips = [], wheelAt = 0, wheelLock = 0, lastAbs = 0, hooks = {}, tween;
+    var el, secs = [], cur = -1, hold = false, io, hooks = {}, seen = new Map(), tween, raf = 0, HEAD = 84;
     function setCur(i) {
       if (i === cur || !secs[i]) return;
       var prev = cur;
       if (secs[prev] && hooks.leave) hooks.leave(secs[prev], secs[i]);
       cur = i;
-      var s = secs[i];
-      secs.forEach(function (x, j) { x.classList.toggle('near', Math.abs(j - i) <= 1); });
-      fit(s);
-      if (secs[i + 1]) idle(function () { if (secs[i + 1]) { fit(secs[i + 1]); C.prepare(secs[i + 1].dataset.fig === 'none' ? '' : secs[i + 1].dataset.fig); } });
-      if (secs[i - 1]) fit(secs[i - 1]);
-      pips.forEach(function (p, j) { p.classList.toggle('on', j === i); });
-      if (!hold) enter(s, prev);
-      C.wake();
+      if (!hold && hooks.enter) hooks.enter(secs[i], secs[prev]);
     }
-    function enter(s, prev) {
-      place(s);
-      if (s.dataset.sky != null) sky(+s.dataset.sky);
-      if (hooks.enter) hooks.enter(s, secs[prev]);
-    }
-    function observe(es) {
-      es.forEach(function (e) { e.target.__r = e.intersectionRatio; if (!hold) e.target.classList.toggle('on', e.intersectionRatio >= .24 || e.target === secs[cur] && moving); });
-      if (moving || hold) return;
-      var best = -1, r = .5;
-      secs.forEach(function (s, i) { if ((s.__r || 0) > r) { r = s.__r; best = i; } });
+    function pick() {
+      raf = 0;
+      var best = -1, h = 0;
+      secs.forEach(function (s, i) { var v = seen.get(s) || 0; if (v > h) { h = v; best = i; } });
       if (best > -1) setCur(best);
     }
-    function goTo(i, instant, quick) {
+    function observe(es) {
+      es.forEach(function (e) {
+        seen.set(e.target, e.isIntersecting ? e.intersectionRect.height : 0);
+        if (e.isIntersecting && !hold) e.target.classList.add('on');
+      });
+      if (!raf) raf = requestAnimationFrame(pick);
+    }
+    function topOf(s) { return Math.max(0, s.offsetTop - (secs.indexOf(s) ? HEAD : 0)); }
+    function goTo(i, instant) {
       i = clamp(i, 0, secs.length - 1);
-      if (i === cur && !instant && !quick) return;
-      var s = secs[i];
-      s.classList.add('near');
-      fit(s);
-      if (calm || instant) { el.classList.add('drive'); el.scrollTop = s.offsetTop; el.classList.remove('drive'); setCur(i); return; }
-      moving = true; el.classList.add('drive');
-      s.classList.add('on');
-      setCur(i);
+      var s = secs[i]; if (!s) return;
       if (tween) tween.kill();
-      tween = gsap.to(el, { scrollTop: s.offsetTop, duration: quick ? .5 : .92, ease: quick ? 'power3.out' : 'power3.inOut', onComplete: function () {
-        el.classList.remove('drive'); moving = false;
-        secs.forEach(function (x, j) { if (j !== cur) x.classList.remove('on'); });
-      } });
-    }
-    function onWheel(e) {
-      if (e.ctrlKey || Sheet.isOpen) return;
-      var inner = e.target.closest && e.target.closest('.s__in.scroll');
-      if (inner) { var dn = e.deltaY > 0, can = dn ? inner.scrollTop + inner.clientHeight < inner.scrollHeight - 1 : inner.scrollTop > 0; if (can) return; }
-      e.preventDefault();
-      if (H.classList.contains('playing')) return;
-      var now = performance.now(), dy = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY, abs = Math.abs(dy);
-      var quiet = now - wheelAt > 140, rising = abs > lastAbs * 1.7 && abs > 30, notch = abs >= 80;
-      wheelAt = now; lastAbs = abs;
-      if (moving || now < wheelLock || abs < 4) return;
-      if (!quiet && !rising && !notch) return;      /* the tail of a trackpad swipe */
-      wheelLock = now + 860;
-      goTo(cur + (dy > 0 ? 1 : -1));
-    }
-    var drag = null;
-    function noDrag(t) { return !!(t.closest && t.closest('[data-nodrag],.deckx,input,select,textarea,.sheet')); }
-    function onDown(e) {
-      drag = null;
-      if (e.touches.length > 1 || H.classList.contains('loading') || H.classList.contains('playing') || Sheet.isOpen || noDrag(e.target)) return;
-      var inner = e.target.closest && e.target.closest('.s__in.scroll');
-      var t = e.touches[0];
-      drag = { y: t.clientY, x: t.clientX, t: performance.now(), base: secs[cur] ? secs[cur].offsetTop : 0, inner: inner, live: false, dy: 0 };
-    }
-    function onMove(e) {
-      if (!drag) return;
-      if (e.touches.length > 1) { drag = null; return; }
-      var t = e.touches[0], dy = drag.y - t.clientY, dx = Math.abs(t.clientX - drag.x);
-      if (!drag.live) {
-        if (Math.abs(dy) < 8) return;
-        if (dx > Math.abs(dy)) { drag = null; return; }            /* sideways is nothing */
-        if (drag.inner) { var dn = dy > 0, can = dn ? drag.inner.scrollTop + drag.inner.clientHeight < drag.inner.scrollHeight - 1 : drag.inner.scrollTop > 0; if (can) { drag = null; return; } }
-        drag.live = true;
-        if (tween) tween.kill();
-        moving = true; el.classList.add('drive');
-        if (secs[cur + (dy > 0 ? 1 : -1)]) { var nx = secs[cur + (dy > 0 ? 1 : -1)]; nx.classList.add('near'); fit(nx); }
-      }
-      var edge = (dy < 0 && cur === 0) || (dy > 0 && cur === secs.length - 1);
-      drag.dy = dy;
-      el.scrollTop = drag.base + (edge ? dy * .22 : dy);
-    }
-    function onUp() {
-      if (!drag || !drag.live) { drag = null; return; }
-      var d = drag; drag = null;
-      var v = d.dy / Math.max(1, performance.now() - d.t), go1 = Math.abs(d.dy) > innerHeight * .09 || Math.abs(v) > .35;
-      var to = go1 ? clamp(cur + (d.dy > 0 ? 1 : -1), 0, secs.length - 1) : cur;
-      goTo(to, false, true);
-    }
-    function onKey(e) {
-      if (Sheet.isOpen || H.classList.contains('playing') || /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) return;
-      var k = e.key, d = k === 'ArrowDown' || k === 'PageDown' || (k === ' ' && !e.shiftKey) ? 1 : k === 'ArrowUp' || k === 'PageUp' || (k === ' ' && e.shiftKey) ? -1 : 0;
-      if (k === 'Home') { e.preventDefault(); goTo(0); return; }
-      if (k === 'End') { e.preventDefault(); goTo(secs.length - 1); return; }
-      if (k === ' ' && e.target.closest && e.target.closest('button,a,summary')) return;
-      if (d) { e.preventDefault(); goTo(cur + d); }
+      if (calm || instant) { el.scrollTop = topOf(s); return; }
+      tween = gsap.to(el, { scrollTop: topOf(s), duration: .7, ease: 'power3.inOut' });
     }
     return {
       setup: function () {
         el = $('#deck');
-        el.classList.add('paged');
-        el.addEventListener('touchstart', onDown, { passive: true });
-        el.addEventListener('touchmove', onMove, { passive: true });
-        el.addEventListener('touchend', onUp, { passive: true });
-        el.addEventListener('touchcancel', onUp, { passive: true });
-        addEventListener('wheel', onWheel, { passive: false });
-        addEventListener('keydown', onKey);
-        var lw = innerWidth, lh = innerHeight, rt;
-        addEventListener('resize', function () {
-          clearTimeout(rt);
-          rt = setTimeout(function () {
-            var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((doc.activeElement || {}).tagName || '');
-            if (innerWidth === lw && (typing || Math.abs(innerHeight - lh) < 80)) return;
-            lw = innerWidth; lh = innerHeight;
-            if (!secs[cur]) return;
-            fit(secs[cur]); goTo(cur, true); place(secs[cur]);
-            if (hooks.resize) hooks.resize();
-          }, 160);
-        }, { passive: true });
+        /* a finger or the wheel always wins over a scroll that is still gliding */
+        var stop = function () { if (tween) tween.kill(); };
+        el.addEventListener('wheel', stop, { passive: true });
+        el.addEventListener('touchstart', stop, { passive: true });
       },
       start: function (h, opt) {
         hooks = h || {}; hold = !!(opt && opt.hold);
-        secs = $$('.s', el); cur = -1; moving = false;
-        el.classList.remove('drive', 'lock'); el.scrollTop = 0;
-        var host = $('.pips');
-        host.innerHTML = secs.map(function () { return '<i></i>'; }).join('');
-        pips = $$('i', host);
-        secs.forEach(function (s) {
-          $$('[data-a]', s).forEach(function (a, i) { a.style.setProperty('--a', i); });
-          $$('[data-w]', s).forEach(split);
-        });
+        secs = $$('.s', el); cur = -1; seen = new Map();
+        el.classList.remove('lock'); el.scrollTop = 0;
+        secs.forEach(function (s) { $$('[data-a]', s).forEach(function (a, i) { a.style.setProperty('--a', Math.min(i, 6)); }); });
         if (io) io.disconnect();
-        io = new IntersectionObserver(observe, { root: el, threshold: [0, .24, .5, .8] });
+        io = new IntersectionObserver(observe, { root: el, threshold: [0, .05, .15, .3, .5, .75, 1] });
         var start = clamp(opt && opt.at || 0, 0, secs.length - 1);
-        fit(secs[start]);
-        if (start) { el.classList.add('drive'); el.scrollTop = secs[start].offsetTop; el.classList.remove('drive'); }
+        if (start) el.scrollTop = topOf(secs[start]);
         setCur(start);
         secs.forEach(function (s) { io.observe(s); });
-        /* size the rest of the page quietly, nearest first, so nothing ever jumps */
-        var q = secs.slice(), run = function () { var s = q.shift(); if (!s || secs.indexOf(s) < 0) return; if (Math.abs(secs.indexOf(s) - cur) > 1) { s.classList.add('near'); fit(s); s.classList.remove('near'); } idle(run); };
-        idle(run);
       },
       release: function () {
         if (!hold) return;
         hold = false;
-        var s = secs[cur]; if (!s) return;
-        s.classList.add('on');
-        enter(s, -1);
+        secs.forEach(function (s, i) { if (i === cur || (seen.get(s) || 0) > 0) s.classList.add('on'); });
+        if (secs[cur] && hooks.enter) hooks.enter(secs[cur], undefined);
       },
       goTo: goTo,
-      next: function () { goTo(cur + 1); },
       get index() { return cur; },
       get section() { return secs[cur]; },
       indexOf: function (s) { return secs.indexOf(s); },
-      byId: function (id) { var s = doc.getElementById(id); return s ? secs.indexOf(s) : -1; },
+      byId: function (id) { var s = doc.getElementById(id), sec = s && s.closest('.s'); return sec ? secs.indexOf(sec) : -1; },
       lock: function (on) { if (el) el.classList.toggle('lock', !!on); },
-      stop: function () { if (io) io.disconnect(); if (tween) tween.kill(); moving = false; hooks = {}; secs = []; cur = -1; }
+      stop: function () { if (io) io.disconnect(); if (tween) tween.kill(); hooks = {}; secs = []; cur = -1; }
     };
   })();
 
@@ -375,6 +211,124 @@
     return api;
   })();
 
+  /* ── The notes reader. PDF pages are drawn right in the site with PDF.js, so notes open
+        on phones too (a plain PDF frame shows nothing on most phones). Pages are drawn
+        only as they scroll into view, so long notes stay light. ── */
+  var Reader = (function () {
+    var d, wrap, pgEl, tEl, sEl, dl, isOpen = false, ignorePop = false, pdf = null, io = null, job = 0, lib = null, zoom = 1, ratios = [], cur = 0;
+    var MAXPX = 12e6; // phones refuse very large canvases
+    function loadLib() {
+      if (lib) return lib;
+      lib = new Promise(function (ok, no) {
+        if (window.pdfjsLib) { ok(window.pdfjsLib); return; }
+        var s = doc.createElement('script'); s.src = 'js/pdf/pdf.min.js';
+        s.onload = function () { var L = window.pdfjsLib; if (!L) { no(); return; } L.GlobalWorkerOptions.workerSrc = 'js/pdf/pdf.worker.min.js'; ok(L); };
+        s.onerror = function () { lib = null; s.remove(); no(); };
+        doc.head.appendChild(s);
+      });
+      return lib;
+    }
+    function build() {
+      d = doc.createElement('dialog'); d.className = 'rd'; d.setAttribute('aria-labelledby', 'rdT');
+      d.innerHTML = '<header class="rd__bar"><button type="button" class="rd__i" data-rd="x" aria-label="Close the notes">' + icon('back') + '</button>' +
+        '<div class="rd__t"><b id="rdT"></b><small></small></div><span class="rd__pg" aria-live="polite"></span>' +
+        '<button type="button" class="rd__i rd__z" data-rd="out" aria-label="Zoom out">' + icon('minus') + '</button><button type="button" class="rd__i rd__z" data-rd="in" aria-label="Zoom in">' + icon('plus') + '</button>' +
+        '<a class="rd__i" download aria-label="Download the notes">' + icon('down') + '</a></header><div class="rd__pages" tabindex="0"></div>';
+      doc.body.appendChild(d);
+      wrap = $('.rd__pages', d); pgEl = $('.rd__pg', d); tEl = $('#rdT', d); sEl = $('.rd__t small', d); dl = $('a[download]', d);
+      d.addEventListener('cancel', function (e) { e.preventDefault(); api.close(); });
+      d.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-rd]'); if (!b) return;
+        if (b.dataset.rd === 'x') api.close(); else setZoom(zoom * (b.dataset.rd === 'in' ? 1.25 : .8));
+      });
+      wrap.addEventListener('scroll', count, { passive: true });
+      addEventListener('resize', function () { if (isOpen && pdf) lay(); });
+    }
+    function baseW() { return Math.min(wrap.clientWidth - 24, 860); }
+    function lay() {
+      var w = Math.round(baseW() * zoom);
+      $$('.rd__p', wrap).forEach(function (el, i) {
+        el.style.width = w + 'px'; el.style.height = Math.round(w * ratios[i]) + 'px'; el.dataset.w = w;
+        if (io) { io.unobserve(el); io.observe(el); }
+      });
+    }
+    function setZoom(z) {
+      z = clamp(z, .6, 3); if (!pdf || z === zoom) return;
+      var y = wrap.scrollTop / Math.max(1, wrap.scrollHeight), x = wrap.scrollLeft / Math.max(1, wrap.scrollWidth);
+      zoom = z; lay();
+      wrap.scrollTop = y * wrap.scrollHeight; wrap.scrollLeft = x * wrap.scrollWidth;
+      haptic(5);
+    }
+    function render(el) {
+      var w = +el.dataset.w, my = job;
+      if (+el.dataset.r === w || !pdf) return;
+      el.dataset.r = w;
+      pdf.getPage(+el.dataset.n + 1).then(function (page) {
+        if (my !== job) return;
+        var v1 = page.getViewport({ scale: 1 }), s = w / v1.width * Math.min(devicePixelRatio || 1, 2);
+        if (v1.width * v1.height * s * s > MAXPX) s = Math.sqrt(MAXPX / (v1.width * v1.height));
+        var vp = page.getViewport({ scale: s }), c = doc.createElement('canvas');
+        c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+        return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(function () {
+          if (my !== job || +el.dataset.r !== w) return;
+          var old = $('canvas', el); if (old) old.replaceWith(c); else el.appendChild(c);
+        });
+      }).catch(function () { el.dataset.r = ''; });
+    }
+    function count() {
+      if (!pdf) return;
+      var ps = $$('.rd__p', wrap), mid = wrap.scrollTop + wrap.clientHeight / 3, i = 0;
+      while (i < ps.length - 1 && ps[i + 1].offsetTop <= mid) i++;
+      if (i !== cur || !pgEl.textContent) { cur = i; pgEl.textContent = (i + 1) + ' / ' + ps.length; }
+    }
+    function fail(url) {
+      wrap.innerHTML = '<div class="rd__msg"><p>These notes couldn’t open here' + (navigator.onLine === false ? ' while you’re offline' : '') + '.</p><a class="btn btn--sun" href="' + esc(url) + '" target="_blank" rel="noopener">Open the PDF</a></div>';
+    }
+    var api = {
+      open: function (url, title, sub) {
+        if (!d) build();
+        var my = ++job;
+        if (io) io.disconnect(); io = null;
+        if (pdf) { pdf.destroy(); pdf = null; }
+        zoom = 1; cur = 0;
+        tEl.textContent = title; sEl.textContent = sub || ''; pgEl.textContent = '';
+        dl.href = url; dl.setAttribute('download', title.replace(/[\\/:*?"<>|]/g, '') + '.pdf');
+        wrap.innerHTML = '<div class="rd__msg"><span class="rd__spin"></span><p>Opening the notes…</p></div>';
+        if (!isOpen) { isOpen = true; d.showModal(); history.pushState({ reader: 1, page: location.href }, ''); tone(520, .12, 'triangle', .03, 760); }
+        wrap.scrollTop = 0; wrap.focus({ preventScroll: true });
+        /* fetched whole, so the cache engine keeps a copy and notes read before open offline */
+        var file = fetch(url).then(function (r) { if (!r.ok) throw new Error('missing'); return r.arrayBuffer(); });
+        Promise.all([loadLib(), file]).then(function (res) {
+          if (my !== job) return;
+          return res[0].getDocument({ data: new Uint8Array(res[1]), isEvalSupported: false }).promise.then(function (p) {
+            if (my !== job) { p.destroy(); return; }
+            pdf = p;
+            var all = [];
+            for (var i = 1; i <= p.numPages; i++) all.push(p.getPage(i).then(function (pg) { var v = pg.getViewport({ scale: 1 }); return v.height / v.width; }));
+            return Promise.all(all).then(function (r) {
+              if (my !== job) return;
+              ratios = r;
+              wrap.innerHTML = r.map(function (_, i) { return '<div class="rd__p" data-n="' + i + '" role="img" aria-label="Page ' + (i + 1) + ' of ' + r.length + '"></div>'; }).join('');
+              io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) render(e.target); }); }, { root: wrap, rootMargin: '900px 0px' });
+              lay(); count();
+            });
+          });
+        }).catch(function () { if (my === job) fail(url); });
+      },
+      close: function (fromPop) {
+        if (!isOpen) return;
+        isOpen = false; job++;
+        if (io) io.disconnect(); io = null;
+        if (pdf) { pdf.destroy(); pdf = null; }
+        d.close(); wrap.innerHTML = '';
+        if (!fromPop) { ignorePop = true; history.back(); }
+      },
+      get isOpen() { return isOpen; },
+      takePop: function () { if (ignorePop) { ignorePop = false; return true; } if (isOpen) { api.close(true); return true; } return false; }
+    };
+    return api;
+  })();
+
 
   /* ── Google sign-in: only loads if a real client ID is set ── */
   var USER = null;
@@ -428,8 +382,10 @@
         });
         $('#fKeyF', body).addEventListener('submit', function (e) {
           e.preventDefault();
-          var k = $('#fKey', body).value.trim();
-          if (KT.keys.indexOf(k) < 0) { $('#kErr', body).textContent = "That key isn't valid. Check it, or ask Kavish on WhatsApp."; haptic(30); return; }
+          /* keys work however they are typed: capitals, small letters, stray spaces */
+          var typed = $('#fKey', body).value.replace(/\s+/g, '').toUpperCase();
+          var k = KT.keys.filter(function (x) { return x.replace(/\s+/g, '').toUpperCase() === typed; })[0];
+          if (!k) { $('#kErr', body).textContent = "That key isn't valid. Check it, or ask Kavish on WhatsApp."; haptic(30); return; }
           store.set('kt_key', k); Sheet.close(); haptic(14); toast('Full access unlocked'); paintMain();
           doc.dispatchEvent(new Event('kt:unlocked'));
         });
@@ -437,7 +393,7 @@
   }
   function openJoin() {
     if (unlocked()) { go('courses.html'); return; }
-    Sheet.open('Join KavishTuitions',
+    Sheet.open('Join Kavish Maths',
       '<p class="mute">Start free, then pick a plan when you are ready.</p>' +
       '<a class="btn btn--sun btn--wide" style="margin-top:12px" href="courses.html" data-close>Start a free lesson' + icon('arrow') + '</a>' +
       '<div class="jplans"><button type="button" class="jplan" data-plan="Monthly (Rs 500)"><b>Monthly</b><span>Per month</span><i>Rs 500</i></button>' +
@@ -451,18 +407,16 @@
     var item = function (h, n, i) { return '<a href="' + h + '"' + (h === cur ? ' aria-current="page"' : '') + '>' + icon(i) + '<span>' + n + '</span>' + icon('arrow') + '</a>'; };
     var p = Progress.get(), live = Progress.live();
     Sheet.open('Menu',
-      '<nav class="mlinks" aria-label="All pages">' + item('index.html', 'Home', 'home') + item('tuition.html', 'Tuition', 'cap') + item('courses.html', 'Courses', 'book') + item('lab.html', 'Maths Lab', 'lab') + item('pricing.html', 'Pricing', 'tag') + item('contact.html', 'Contact', 'chat') + '</nav>' +
+      '<nav class="mlinks" aria-label="All pages">' + item('index.html', 'Home', 'home') + item('courses.html', 'Courses', 'book') + item('pricing.html', 'Pricing', 'tag') + item('lab.html', 'Maths Lab', 'lab') + item('contact.html', 'Contact', 'chat') + '</nav>' +
       (p.xp ? '<div class="mtog"><span>' + esc(Progress.rank(p.xp)) + '<small>' + p.xp + ' XP, ' + live + ' day streak</small></span>' + icon('flame') + '</div>' : '') +
-      '<div class="mtog"><span>Sound effects<small>Soft ticks and chimes</small></span><button type="button" class="tog" id="tSnd" aria-pressed="' + SON + '" aria-label="Sound effects"></button></div>' +
-      '<div class="mtog" style="border-bottom:0"><span>Battery saver<small>Calmer 3D for older phones</small></span><button type="button" class="tog" id="tLite" aria-pressed="' + (store.get('kt_lite') === '1') + '" aria-label="Battery saver"></button></div>',
+      '<div class="mtog" style="border-bottom:0"><span>Sound effects<small>Soft ticks and chimes</small></span><button type="button" class="tog" id="tSnd" aria-pressed="' + SON + '" aria-label="Sound effects"></button></div>',
       function (b) {
         $('#tSnd', b).addEventListener('click', function () { SON = !SON; store.set('kt_snd', SON ? '1' : '0'); this.setAttribute('aria-pressed', SON); tone(500, .2, 'triangle', .05, 900); haptic(6); });
-        $('#tLite', b).addEventListener('click', function () { var on = store.get('kt_lite') !== '1'; store.set('kt_lite', on ? '1' : '0'); this.setAttribute('aria-pressed', on); C.lite(on); haptic(6); });
       });
   }
   function paintMain() {
     var l = $('[data-main-label]'); if (l) l.textContent = unlocked() ? 'Learn' : 'Join';
-    var j = $('.top__join'); if (j) j.textContent = unlocked() ? 'Learn' : 'Join';
+    var j = $('.top__end [data-unlock]'); if (j) j.hidden = unlocked();
   }
 
   /* ── small motion pieces ── */
@@ -528,154 +482,122 @@
   var Pages = {};
 
   Pages.home = function (root, off, each) {
-    var slot = function (list, host, ic) {
-      if (!host) return;
-      host.innerHTML = list.map(function (c) {
-        return '<li class="' + (c.slot ? 'slot' : '') + '"><span class="tag">' + icon(c.slot ? 'plus' : ic) + '</span><span><b>' + esc(c.title) + '</b><br><small>' + esc(c.slot ? 'Details coming soon' : [c.place, c.when].filter(Boolean).join(', ')) + '</small></span></li>';
-      }).join('');
-    };
-    var ex = $('#experience-list', root);
-    if (ex) ex.innerHTML = KT.experience.map(function (e) {
-      return '<li><b>' + esc(e.role) + '</b><small>' + esc(e.place + ', ' + e.when) + '</small>' + (e.note ? '<p>' + esc(e.note) + '</p>' : '') + '</li>';
-    }).join('');
-    slot(KT.education, $('#education', root), 'cap');
-    slot(KT.certifications, $('#certifications', root), 'medal');
-    if (KT.photo) $$('[data-avatar] .ava__in', root).forEach(function (a) { a.innerHTML = '<img src="' + esc(KT.photo) + '" alt="' + esc(KT.name) + '" width="224" height="224" decoding="async" loading="lazy">'; });
-    var posts = $('#posts', root);
-    if (posts) {
-      posts.innerHTML = KT.posts.map(function (p, i) { return '<button type="button" class="rowl" data-post="' + i + '"><b>' + esc(p.title) + '</b><span>' + esc(p.lead) + '</span>' + icon('arrow') + '</button>'; }).join('');
-      posts.addEventListener('click', function (e) {
-        var b = e.target.closest('[data-post]'); if (!b) return;
-        var p = KT.posts[+b.dataset.post];
-        Sheet.open(p.title, p.body.map(function (t) { return '<p class="mute" style="margin-bottom:14px;font-size:1.06rem">' + esc(t) + '</p>'; }).join('') + '<a class="btn btn--line btn--wide" href="' + waLink('Hi Kavish, I read your post "' + p.title + '".') + '" target="_blank" rel="noopener">' + icon('wa') + 'Reply on WhatsApp</a>');
-      });
+    /* Qualifications appear only once they are real. An empty slot never reaches the page. */
+    var creds = $('#creds', root), real = function (c) { return !c.slot; };
+    var row = function (ic) { return function (c) { return '<li><span class="tag">' + icon(ic) + '</span><span><b>' + esc(c.title) + '</b><br><small>' + esc([c.place, c.when].filter(Boolean).join(', ')) + '</small></span></li>'; }; };
+    if (creds) {
+      creds.innerHTML = (KT.education || []).filter(real).map(row('cap')).concat((KT.certifications || []).filter(real).map(row('medal'))).slice(0, 3).join('');
+      creds.hidden = !creds.innerHTML;
     }
+    if (KT.photo) $$('[data-avatar]', root).forEach(function (a) { a.innerHTML = '<img src="' + esc(KT.photo) + '" alt="' + esc(KT.name) + '" width="224" height="224" decoding="async" loading="lazy">'; });
   };
 
-  /* The MATHS window. Two sections: the letters, then straight through them into the sunset */
-  function flyHooks(root) {
-    var a = $('#zoom-a', root), b = $('#zoom-b', root);
-    if (!a) return null;
-    if (!C.ok || calm) { a.classList.add('nofly'); return null; }
-    C.prepareMask();
-    var flat = function () { return { x: 0, y: -.76, scale: innerWidth > innerHeight ? 1.9 : 2.4, pitch: 1.34 }; };
-    return {
-      enter: function (s, from) {
-        if (s === a) {
-          C.figure('ocean', .6);
-          gsap.killTweensOf(S, 'mask,maskScale,sky,sun');
-          gsap.to(S, Object.assign({ mask: 1, maskScale: 1, sky: 1, sun: 1, alpha: .9, duration: from === b ? .7 : .6, ease: 'power2.inOut' }, flat()));
-        } else if (s === b) {
-          C.figure('ocean', .6);
-          gsap.killTweensOf(S, 'mask,maskScale,sky,sun');
-          if (from === a) gsap.timeline().to(S, { maskScale: 30, duration: 1.15, ease: 'power3.in' }, 0).to(S, { mask: 0, duration: .22, ease: 'none' }, .95);
-          else gsap.to(S, Object.assign({ mask: 0, maskScale: 30, sky: 1, sun: 1, alpha: .9, duration: .7 }, flat()));
-        }
-      },
-      leave: function (s, to) {
-        if ((s === a || s === b) && to !== a && to !== b) { gsap.killTweensOf(S, 'mask,maskScale,sky,sun'); gsap.to(S, { mask: 0, sky: 0, sun: 0, maskScale: 1, duration: .55, ease: 'power2.inOut' }); }
-      }
-    };
-  }
+  Pages.courses = function (root, off) { chapters(root, off); };
 
-  Pages.tuition = function (root, off, each) { each.push(flyHooks(root)); };
-
-  Pages.courses = function (root, off) {
-    var DONE = new Set();
+  /* The chapter list: pick a grade and a course, open a chapter, read its notes. */
+  function chapters(root, off) {
+    var ST = window.KTS || [], DONE = new Set(), all = [], filter = '';
     try { DONE = new Set(JSON.parse(store.get('kt_done') || '[]')); } catch (e) {}
-    var param = new URLSearchParams(location.search).get('level');
-    var level = KT.levels.filter(function (l) { return l.id === param; })[0] || KT.levels[+(store.get('kt_lvl') || 0)] || KT.levels[0];
-    var host = $('#path', root), segs = $('#levels', root), total = KT.levels.reduce(function (s, l) { return s + l.lessons.length; }, 0);
-    var keyOf = function (t) { return level.key + '|' + t.n; }, allowed = function (t) { return t.free || unlocked(); };
-    var exam = $('#exam', root);
-    if (exam) {
-      var now = new Date(), d = new Date(now.getFullYear(), KT.examMonth, KT.examDay);
-      if (d < now) d.setFullYear(d.getFullYear() + 1);
-      var days = Math.ceil((d - now) / 864e5);
-      exam.textContent = 'Next exam season in ' + days + (days === 1 ? ' day' : ' days');
+    var segs = $('#levels', root), crs = $('#crs', root), info = $('#cinfo', root), host = $('#chapters', root);
+    if (!segs || !host || !ST.length) return;
+    ST.forEach(function (st) { st.courses.forEach(function (c) { c.stage = st; all.push(c); }); });
+    var byId = function (id) { return all.filter(function (c) { return c.id === id; })[0]; };
+    var q = new URLSearchParams(location.search), lv = q.get('level');
+    var oldLevel = ST.filter(function (s) { return s.id === (lv === 'nce' ? 'g9' : lv); })[0];
+    var course = byId(q.get('course')) || (oldLevel && oldLevel.courses[0]) || byId(store.get('kt_course')) || all[0];
+    var list = function () { return course.parts.reduce(function (a, p) { return a.concat(p.ch); }, []); };
+    var allowed = function (ch) { return !!ch.free || unlocked(); };
+    var codeOf = function (c) { return c.code && c.code !== 'NCE' ? ' (' + c.code + ')' : ''; };
+
+    function drawPick() {
+      segs.innerHTML = ST.map(function (s) { return '<button type="button" data-st="' + s.id + '" aria-pressed="' + (s === course.stage) + '">' + esc(s.label) + '</button>'; }).join('');
+      var cs = course.stage.courses;
+      crs.hidden = cs.length < 2;
+      crs.innerHTML = cs.map(function (c) { return '<button type="button" data-co="' + c.id + '" aria-pressed="' + (c === course) + '">' + esc(c.name) + (c.code ? '<small>' + esc(c.code) + '</small>' : '') + '</button>'; }).join('');
     }
-    function drawSeg() {
-      segs.innerHTML = KT.levels.map(function (l) { return '<button type="button" class="rowl" data-l="' + l.id + '" aria-pressed="' + (l === level) + '"><b>' + esc(l.label) + '</b><span>' + esc(l.exam) + ', ' + l.lessons.length + ' lessons</span>' + icon('arrow') + '</button>'; }).join('');
+    function drawInfo() {
+      var l = list(), done = l.filter(function (c) { return DONE.has(c.k); }).length, real = l.filter(function (c) { return c.real; }).length;
+      info.innerHTML = '<div class="cinfo__top"><div><b>' + esc(course.board) + esc(codeOf(course)) + '</b><small>' + l.length + ' chapters, ' + (real ? real + ' with notes ready' : 'sample notes for now') + (course.note ? '. ' + esc(course.note) : '') + '</small></div>' +
+        '<span class="cinfo__n" title="Chapters done">' + done + '/' + l.length + '</span></div><div class="cinfo__bar" aria-hidden="true"><i style="width:' + (l.length ? done / l.length * 100 : 0).toFixed(1) + '%"></i></div>' +
+        '<label class="cinfo__q">' + icon('search') + '<span class="sr">Find a chapter</span><input class="inp" type="search" id="chq" placeholder="Find a chapter or topic" autocomplete="off" enterkeyhint="search" value="' + esc(filter) + '"></label>';
     }
-    function progress() {
-      var n = DONE.size;
-      $('#ringP', root).style.strokeDashoffset = 150.8 * (1 - Math.min(n / total, 1));
-      $('#ringT', root).textContent = n;
-      $('#pT', root).textContent = n ? n + ' of ' + total + ' lessons complete' : 'Start your first lesson';
-      $('#pS', root).textContent = n ? (n === total ? 'Every lesson done. Legend.' : 'Keep going, one step at a time.') : 'Free previews are open to everyone.';
+    function row(ch) {
+      var done = DONE.has(ch.k), ok = allowed(ch), tags = [];
+      var cls = done ? 'done' : ok ? (ch.free && !unlocked() ? 'free' : 'open') : 'locked';
+      if (done) tags.push('Done'); else if (!ok) tags.push('Locked'); else if (ch.free && !unlocked()) tags.push('Free');
+      tags.push(ch.real ? (ch.real > 1 ? ch.real + ' notes' : 'Notes') : 'Sample notes');
+      if (ch.yt) tags.push('Video');
+      return '<button type="button" class="node ' + cls + (ch.real ? ' real' : '') + '" data-c="' + ch.n + '" aria-label="Chapter ' + ch.n + ', ' + esc(ch.t) + '. ' + tags.join(', ') + '">' +
+        '<span class="node__b" aria-hidden="true">' + (done ? icon('check') : ok ? '<span class="node__num">' + ch.n + '</span>' : icon('lock')) + '</span>' +
+        '<span class="node__t"><span class="node__n">' + esc(ch.t) + '</span><span class="node__s">' + tags.join(' · ') + '</span></span></button>';
     }
-    function draw() {
-      $('#pathT', root).textContent = level.label + ' lessons';
-      $('#pathS', root).textContent = level.exam;
-      var nowDone = false;
-      var html = level.lessons.map(function (t, i) {
-        var done = DONE.has(keyOf(t)), ok = allowed(t), cur = !done && ok && !nowDone;
-        if (cur) nowDone = true;
-        var cls = done ? 'done' : ok ? (t.free && !unlocked() ? 'free' : 'open') : 'locked';
-        var sub = done ? 'Done' : t.free ? 'Free preview' : unlocked() ? 'Unlocked' : 'Locked';
-        return '<div class="node ' + cls + (cur ? ' now' : '') + '" data-n="' + i + '"><button type="button" class="node__b" data-i="' + i + '" aria-label="' + esc(t.n) + ', ' + sub + '">' + icon(done ? 'check' : ok ? 'play' : 'lock') + '</button><span class="node__t"><span class="node__n">' + esc(t.n) + '</span><span class="node__s">' + sub + '</span></span></div>';
-      }).join('');
-      host.innerHTML = '<svg class="line" aria-hidden="true"><path class="bg" stroke="var(--line-2)" stroke-dasharray="3 9"/><path class="fg" stroke="var(--sun)"/></svg>' + html;
-      layout();
+    function drawList() {
+      var f = filter.trim().toLowerCase(), html = '';
+      course.parts.forEach(function (p) {
+        var rows = p.ch.filter(function (ch) { return !f || (ch.t + ' ' + ch.s.join(' ')).toLowerCase().indexOf(f) > -1; });
+        if (rows.length) html += '<section class="part"><h2 class="part__h">' + esc(p.name) + '<small>' + p.ch.length + ' chapter' + (p.ch.length > 1 ? 's' : '') + '</small></h2><div class="glass path">' + rows.map(row).join('') + '</div></section>';
+      });
+      host.innerHTML = html || '<p class="note">No chapter matches “' + esc(filter.trim()) + '”.</p>';
     }
-    function layout() {
-      var nodes = $$('.node', host);
-      if (!nodes.length || !host.clientWidth) return;
-      var left = Math.max(0, host.clientWidth - nodes[0].offsetWidth);
-      nodes.forEach(function (n, i) { n.style.setProperty('--x', ((Math.sin(i * 1.45 + 2.2) * .5 + .5) * left).toFixed(1) + 'px'); });
-      var r = host.getBoundingClientRect(), pts = $$('.node__b', host).map(function (n) { var q = n.getBoundingClientRect(); return [q.left - r.left + q.width / 2, q.top - r.top + q.height / 2]; });
-      var dp = 'M' + pts[0][0] + ' ' + pts[0][1];
-      for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], b = pts[i], m = (b[1] - a[1]) * .5; dp += 'C' + a[0] + ' ' + (a[1] + m) + ' ' + b[0] + ' ' + (b[1] - m) + ' ' + b[0] + ' ' + b[1]; }
-      var bg = $('.bg', host), fg = $('.fg', host); bg.setAttribute('d', dp); fg.setAttribute('d', dp);
-      var doneN = level.lessons.filter(function (t) { return DONE.has(keyOf(t)); }).length, len = fg.getTotalLength();
-      fg.style.strokeDasharray = len; fg.style.strokeDashoffset = len * (1 - (pts.length > 1 ? Math.min(1, doneN / (pts.length - 1)) : 0));
+    function drawAll() { drawPick(); drawInfo(); drawList(); }
+    function pick(c) {
+      if (!c || c === course) return;
+      course = c; filter = '';
+      store.set('kt_course', c.id);
+      history.replaceState(history.state, '', '?course=' + c.id);
+      haptic(6); drawAll();
     }
-    function open(i) {
-      var t = level.lessons[i], ok = allowed(t), k = keyOf(t), box = function (x) { return '<div class="vbox">' + x + '</div>'; };
-      var notes = t.pdf === 'FILE_ID_HERE' ? '<div class="vbox__b"><b>Notes coming soon</b></div>' : '<iframe src="https://drive.google.com/file/d/' + esc(t.pdf) + '/preview" title="' + esc(t.n) + ' notes" loading="lazy"></iframe>';
-      var video = '<button type="button" class="play" data-yt="' + esc(t.yt) + '" aria-label="Play ' + esc(t.n) + '" style="background-image:url(https://i.ytimg.com/vi/' + esc(t.yt) + '/hqdefault.jpg)"><span>' + icon('play', '') + '</span></button>';
-      var content = ok
-        ? '<p class="mute" style="margin-bottom:10px">' + esc(level.label + ', ' + level.exam) + '</p><div class="seg" role="group" aria-label="Lesson view" style="margin-bottom:12px"><button type="button" data-v="video" aria-pressed="true">Video</button><button type="button" data-v="notes" aria-pressed="false">Notes</button></div>' +
-          '<div data-pane="video">' + box(video) + '</div><div data-pane="notes" hidden>' + box(notes) + '</div><button type="button" class="btn btn--sun btn--wide" id="mk" style="margin-top:14px">' + (DONE.has(k) ? 'Completed, undo' : icon('check') + 'Mark lesson complete') + '</button>'
-        : '<p class="mute">This lesson is part of full access. Unlock every lesson, note and worked solution.</p><button type="button" class="btn btn--sun btn--wide" style="margin-top:14px" data-unlock>' + icon('lock') + 'Unlock full access</button>';
-      Sheet.open(t.n, content, function (b) {
+    function open(n) {
+      var ch = list().filter(function (x) { return x.n === n; })[0]; if (!ch) return;
+      var ok = allowed(ch), k = ch.k, sub = 'Chapter ' + ch.n + ' · ' + course.name + codeOf(course);
+      var html = '<p class="mute" style="margin-bottom:14px">' + esc(course.board + codeOf(course) + ', chapter ' + ch.n) + '</p>' +
+        '<h3 class="cs__h">In this chapter</h3><ul class="ticks cs__l">' + ch.s.map(function (s) { return '<li>' + icon('check') + '<span>' + esc(s) + '</span></li>'; }).join('') + '</ul>';
+      if (ok) {
+        if (!ch.real) html += '<p class="cs__sample">' + icon('note') + '<span>These are <b>sample notes</b> so the site can be tested. Kavish’s real notes for this chapter are on the way.</span></p>';
+        if (ch.yt) html += '<div class="vbox" style="margin-top:16px"><button type="button" class="play" data-yt="' + esc(ch.yt) + '" aria-label="Play the video for ' + esc(ch.t) + '" style="background-image:url(https://i.ytimg.com/vi/' + esc(ch.yt) + '/hqdefault.jpg)"><span>' + icon('play', '') + '</span></button></div>';
+        html += '<h3 class="cs__h" style="margin-top:18px">Notes</h3><div class="cs__files">' + ch.f.map(function (f, i) {
+          return '<div class="cs__file"><button type="button" class="cs__open" data-read="' + i + '">' + icon('note') + '<span><b>' + esc(f.t || (ch.real ? 'Chapter notes' : 'Sample notes')) + '</b><small>Read here</small></span></button>' +
+            '<a class="cs__dl" href="' + esc(f.u) + '" download="' + esc('Chapter ' + ch.n + ' - ' + ch.t + (f.t ? ' - ' + f.t : '') + '.pdf') + '" aria-label="Download ' + esc(f.t || 'the notes') + '">' + icon('down') + '</a></div>';
+        }).join('') + '</div>' +
+          '<button type="button" class="btn btn--line btn--wide" id="mk" style="margin-top:14px">' + (DONE.has(k) ? 'Completed, undo' : icon('check') + 'Mark chapter complete') + '</button>';
+      } else {
+        html += '<p class="mute" style="margin-top:16px">This chapter is part of full access. Unlock every chapter, its notes and worked solutions.</p><button type="button" class="btn btn--sun btn--wide" style="margin-top:14px" data-unlock>' + icon('lock') + 'Unlock full access</button>';
+      }
+      Sheet.open(ch.t, html, function (b) {
         if (!ok) return;
-        var seg = $('.seg', b);
-        seg.addEventListener('click', function (e) {
-          var v = e.target.closest('[data-v]'); if (!v) return;
-          $$('[data-v]', seg).forEach(function (x) { x.setAttribute('aria-pressed', x === v); });
-          $$('[data-pane]', b).forEach(function (p) { p.hidden = p.dataset.pane !== v.dataset.v; });
+        $('.cs__files', b).addEventListener('click', function (e) {
+          var r = e.target.closest('[data-read]'); if (!r) return;
+          var f = ch.f[+r.dataset.read]; haptic(6);
+          Reader.open(f.u, f.t ? ch.t + ': ' + f.t : ch.t, sub + (ch.real ? '' : ' · sample'));
         });
         var play = $('.play', b);
         if (play) play.addEventListener('click', function () {
           var f = doc.createElement('iframe');
           f.src = 'https://www.youtube-nocookie.com/embed/' + play.dataset.yt + '?autoplay=1&playsinline=1';
-          f.title = t.n + ' video lesson'; f.allow = 'autoplay; fullscreen; encrypted-media'; f.allowFullscreen = true;
+          f.title = ch.t + ' video'; f.allow = 'autoplay; fullscreen; encrypted-media'; f.allowFullscreen = true;
           play.replaceWith(f);
         });
         $('#mk', b).addEventListener('click', function () {
           var had = DONE.has(k);
           if (had) DONE.delete(k); else DONE.add(k);
           store.set('kt_done', JSON.stringify(Array.from(DONE)));
-          draw(); progress(); Sheet.close();
-          if (!had) { haptic(16); tone(660, .16, 'triangle', .05, 990); toast('Lesson complete. Nice work!'); C.ripple(innerWidth / 2, innerHeight / 2); var r = Progress.played(40); if (r.rose) toast('New rank: ' + r.rose); }
+          drawInfo(); drawList(); Sheet.close();
+          if (!had) { haptic(16); tone(660, .16, 'triangle', .05, 990); toast('Chapter complete. Nice work!'); C.ripple(innerWidth / 2, innerHeight / 2); var r = Progress.played(40); if (r.rose) toast('New rank: ' + r.rose); }
         });
       });
     }
     segs.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-l]'); if (!b) return;
-      level = KT.levels.filter(function (l) { return l.id === b.dataset.l; })[0];
-      store.set('kt_lvl', KT.levels.indexOf(level));
-      history.replaceState(history.state, '', '?level=' + level.id);
-      haptic(6); drawSeg(); draw();
-      Deck.goTo(Deck.byId('path-sec'));
+      var b = e.target.closest('[data-st]'); if (!b) return;
+      var st = ST.filter(function (s) { return s.id === b.dataset.st; })[0];
+      if (st && st !== course.stage) pick(st.courses[0]);
     });
-    host.addEventListener('click', function (e) { var b = e.target.closest('[data-i]'); if (b) { haptic(6); open(+b.dataset.i); } });
-    var unl = function () { draw(); }; doc.addEventListener('kt:unlocked', unl);
+    crs.addEventListener('click', function (e) { var b = e.target.closest('[data-co]'); if (b) pick(byId(b.dataset.co)); });
+    info.addEventListener('input', function (e) { if (e.target.id === 'chq') { filter = e.target.value; drawList(); } });
+    host.addEventListener('click', function (e) { var b = e.target.closest('[data-c]'); if (b) { haptic(6); open(+b.dataset.c); } });
+    var unl = function () { drawInfo(); drawList(); }; doc.addEventListener('kt:unlocked', unl);
     off.push(function () { doc.removeEventListener('kt:unlocked', unl); });
-    var ro = new ResizeObserver(layout); ro.observe(host); off.push(function () { ro.disconnect(); });
-    drawSeg(); draw(); progress();
-  };
+    drawAll();
+  }
 
   /* True or false bank. Every line was worked through by hand.
      [statement, is it true, why, level] */
@@ -734,6 +656,9 @@
     function start() {
       running = true; score = 0; combo = 0; right = 0; wrong = []; seen = 0; deck = pool();
       H.classList.add('playing');
+      /* while a round is on, the game takes the whole screen so the buttons are never cut off */
+      var panel = el.closest('.tool'), box = $('#deck');
+      if (panel && box) box.scrollTop += panel.getBoundingClientRect().top - 12;
       Deck.lock(true);
       el.innerHTML = '<div class="game__top"><span>Score <b id="gS">0</b></span><span id="gC"></span><span><b id="gT">' + ROUND + '</b>s</span></div><div class="timer"><i id="gBar"></i></div><div class="deckx" id="gDeck" aria-live="polite"></div>' +
         '<div class="game__btns"><button type="button" class="btn btn--f" id="gF">' + icon('x') + 'False</button><button type="button" class="btn btn--t" id="gTr">' + icon('check') + 'True</button></div>';
@@ -801,7 +726,7 @@
       if (isBest) { best = score; store.set('kt_gbest', best); }
       var p = Progress.played(Math.round(score / 10) + 5);
       var acc = seen ? Math.round(right / seen * 100) : 0;
-      var share = 'I scored ' + score + ' on Swipe Maths at KavishTuitions. Can you beat me? ' + location.href.split('#')[0].split('?')[0];
+      var share = 'I scored ' + score + ' on Swipe Maths at Kavish Maths. Can you beat me? ' + location.href.split('#')[0].split('?')[0];
       el.innerHTML = '<div class="over"><span class="eyebrow" style="margin:0">' + (isBest ? 'New best score!' : 'Time!') + '</span><div class="big shimmer" id="gBig">' + score + '</div>' +
         '<p class="mute">' + right + ' of ' + seen + ' correct (' + acc + '%). ' + p.streak + ' day streak, ' + p.xp + ' XP.</p>' + (p.rose ? '<p style="color:var(--sun);font-weight:600">New rank: ' + esc(p.rose) + '</p>' : '') +
         '<div class="row" style="width:100%"><button type="button" class="btn btn--sun" style="flex:1 1 140px" id="gAgain">Play again</button><a class="btn btn--wa" style="flex:1 1 140px" href="' + waLink2(share) + '" target="_blank" rel="noopener">' + icon('wa') + 'Challenge a friend</a></div>' +
@@ -1120,6 +1045,7 @@
   doc.addEventListener('pointerover', warm, { passive: true });
   doc.addEventListener('touchstart', warm, { passive: true });
   addEventListener('popstate', function () {
+    if (Reader.takePop()) return;
     if (Sheet.takePop()) return;
     if (fileOf(location.href) !== doc.body.dataset.file) go(location.href, { push: false });
   });
@@ -1136,7 +1062,7 @@
       var tell = function () {
         if (thrifty) return;
         var w = reg.active || reg.waiting || reg.installing;
-        if (w) w.postMessage({ warm: ['index.html', 'tuition.html', 'courses.html', 'lab.html', 'pricing.html', 'contact.html'] });
+        if (w) w.postMessage({ warm: ['index.html', 'courses.html', 'pricing.html', 'lab.html', 'contact.html'] });
       };
       if (reg.active) tell(); else navigator.serviceWorker.ready.then(tell);
     }).catch(function () {});
@@ -1144,7 +1070,8 @@
 
   /* ── the intro exit: warp, burst, flash, open ── */
   function hint() {
-    if (calm || !C.ok || store.get('kt_hint') || S.glyphs < .5) return;
+    /* mouse only: on a phone the bubble sat on top of the headline */
+    if (calm || !fine || !C.ok || store.get('kt_hint') || S.glyphs < .5) return;
     setTimeout(function () { if (store.get('kt_hint')) return; store.set('kt_hint', '1'); toast(fine ? 'Try it: drag the maths symbols' : 'Try it: flick the maths symbols', true); }, 2600);
   }
   function unlockScroll() { H.classList.remove('loading'); }
@@ -1196,19 +1123,10 @@
     if (location.hash) { var sec = doc.getElementById(location.hash.slice(1)); if (sec) at = $$('.s', root).indexOf(sec); }
     initPage(root, { at: Math.max(0, at), hold: true });
     paintStreak(); paintMain();
-    if (fine && !calm) {
-      var c = $('.kcur'), cx = gsap.quickTo(c, 'x', { duration: .3 }), cy = gsap.quickTo(c, 'y', { duration: .3 });
-      addEventListener('pointermove', function (e) {
-        if (e.pointerType !== 'mouse') return;
-        c.style.opacity = 1; cx(e.clientX); cy(e.clientY);
-        c.classList.toggle('big', !!(e.target.closest && e.target.closest('a,button,summary')));
-      }, { passive: true });
-      doc.addEventListener('mouseleave', function () { c.style.opacity = 0; });
-    }
     /* once the page is settled, quietly fetch the likely next pages and turn on the cache */
     var settled = function () {
       offlineReady();
-      if (!thrifty) ['tuition.html', 'courses.html', 'lab.html'].forEach(function (u) { fetchPage(u).catch(function () {}); });
+      if (!thrifty) ['courses.html', 'pricing.html'].forEach(function (u) { fetchPage(u).catch(function () {}); });
     };
     setTimeout(function () { idle(settled); }, 3200);
     var finish = function () { exitLoader(); };
@@ -1221,6 +1139,7 @@
     }, 12000);
     window.KTDBG = { S: S, go: go, Sheet: Sheet, BANK: BANK, Progress: Progress, Deck: Deck };
   }
-  function syncThemeSoon() { if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { var s = Deck.section; if (s) { s.__fit = ''; fit(s); place(s); } }); }
+  /* the changing word in the headline is measured again once the real font has arrived */
+  function syncThemeSoon() { if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { $$('.rot').forEach(function (r) { var c = r.lastElementChild; if (c) gsap.set(r, { width: c.offsetWidth + 2 }); }); }); }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot); else boot();
 })();
